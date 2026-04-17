@@ -13,6 +13,7 @@ $cloudRoot = Join-Path $workspaceRoot "DuressCloud"
 $unitTestsProject = Join-Path $cloudRoot "tests\DuressCloud.Web.Tests\DuressCloud.Web.Tests.csproj"
 $integrationTestsProject = Join-Path $cloudRoot "tests\DuressCloud.Web.IntegrationTests\DuressCloud.Web.IntegrationTests.csproj"
 $webProject = Join-Path $cloudRoot "src\DuressCloud.Web\DuressCloud.Web.csproj"
+$cloudAuthSmokeScript = Join-Path $scriptRoot "exercise-cloud-auth-smoke.ps1"
 $logsRoot = Join-Path $OutputRoot "logs"
 $publishRoot = Join-Path $OutputRoot "publish"
 $summaryPath = Join-Path $OutputRoot "CLOUD_REGRESSION_SUMMARY.md"
@@ -116,6 +117,10 @@ $results.Add((Invoke-And-Capture -Name "04-live-cloud-smoke" -Action {
   } | Format-List
 }))
 
+$results.Add((Invoke-And-Capture -Name "05-cloud-auth-smoke" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $cloudAuthSmokeScript -OutputRoot (Join-Path $OutputRoot "auth-smoke") -BaseUrl $BaseUrl
+}))
+
 $summary = @()
 $summary += "# Cloud Regression Suite"
 $summary += ""
@@ -127,6 +132,7 @@ $summary += "- Cloud unit tests"
 $summary += "- Cloud integration tests"
 $summary += "- Release publish validation"
 $summary += "- Live cloud ready/health/login smoke against $BaseUrl"
+$summary += "- Authenticated management and portal smoke with MFA completion and portal MSI download"
 $summary += ""
 $summary += "## Results"
 $summary += ""

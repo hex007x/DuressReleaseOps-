@@ -116,7 +116,7 @@ $lines += "- Server-managed signed client policy"
 $lines += "- Pre-install client provisioning from the server side"
 $lines += "- Trial, expired, production/full, and capacity enforcement scenarios"
 $lines += "- Linked-cloud claim, replacement, renewal check-in, and key-rotation rehearsals"
-$lines += "- Cloud unit/integration coverage, publish validation, and live ready/login smoke"
+$lines += "- Cloud unit/integration coverage, publish validation, live ready/login smoke, and authenticated MFA-backed installer access"
 $lines += "- Specific regressions for fixed bugs such as claim-token recovery, admin route posts, TS install guidance, and monitor layout"
 
 Set-Content -Path $summaryPath -Value $lines -Encoding UTF8

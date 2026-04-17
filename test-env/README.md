@@ -249,6 +249,7 @@ That pack gathers:
 - client unit tests
 - server regression tests
 - cloud unit/integration/publish smoke
+- authenticated cloud staff and portal smoke with MFA completion plus portal installer download
 - known-issue regression checks for previously fixed bugs
 - policy suite
 - compatibility suite
