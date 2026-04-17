@@ -248,6 +248,7 @@ That pack gathers:
 
 - client unit tests
 - server regression tests
+- cloud unit/integration/publish smoke
 - policy suite
 - compatibility suite
 - linked-cloud claim/check-in/replacement/key-rotation regressions when the real service is available
@@ -310,6 +311,7 @@ powershell -ExecutionPolicy Bypass -File .\test-env\exercise-linked-cloud-checki
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-linked-cloud-replacement.ps1 -ReplacementClaimToken <token>
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-linked-cloud-trusted-key-rotation.ps1
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-linked-cloud-regression-suite.ps1
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-cloud-regression-suite.ps1
 ```
 
 Note: `exercise-license-refresh.ps1` restarts the real Windows service, so it must be run from an elevated PowerShell session.
@@ -361,6 +363,7 @@ powershell -ExecutionPolicy Bypass -File .\test-env\stop-server.ps1
 - `exercise-incident-suite.ps1` is the higher-level real-server workflow suite and is the preferred command when you want one result that covers routing plus notifications.
 - `exercise-licensing-suite.ps1` is intentionally separate so licensing warnings and entitlement checks do not get mixed into every normal incident test.
 - `exercise-linked-cloud-regression-suite.ps1` is the preferred release-gating proof for linked-cloud claim, replacement, renewal check-in, and trusted-key rotation.
+- `exercise-cloud-regression-suite.ps1` is the preferred release-gating proof for Duress Cloud tests, publish output, and live site smoke.
 - `exercise-client-policy-suite.ps1` is the preferred end-to-end verification for signed server-managed client policy, monitor-visible policy state, queued resend processing, and the break-glass offline unlock path.
 - `run-googlechat-unit-test.ps1` is a local-only automated test for the Google Chat webhook code path. It validates payload formatting and HTTP dispatch against a stub listener, not your real Google Chat space.
 - Client A and Client B are seeded with distinct names and messages so their logs are easy to tell apart.

@@ -10,6 +10,7 @@ $fullRegressionScript = Join-Path $scriptRoot "exercise-full-regression-pack.ps1
 $provisioningScript = Join-Path $scriptRoot "exercise-client-policy-provisioning-suite.ps1"
 $licensingProofScript = Join-Path $scriptRoot "exercise-licensing-proof-pack.ps1"
 $linkedCloudScript = Join-Path $scriptRoot "exercise-linked-cloud-regression-suite.ps1"
+$cloudRegressionScript = Join-Path $scriptRoot "exercise-cloud-regression-suite.ps1"
 $logsRoot = Join-Path $OutputRoot "logs"
 $summaryPath = Join-Path $OutputRoot "E2E_PROOF_REPORT.md"
 
@@ -46,6 +47,7 @@ $fullRegressionRoot = Join-Path $OutputRoot "full-regression"
 $provisioningRoot = Join-Path $OutputRoot "policy-provisioning"
 $licensingRoot = Join-Path $OutputRoot "licensing-proof"
 $linkedCloudRoot = Join-Path $OutputRoot "linked-cloud"
+$cloudRoot = Join-Path $OutputRoot "cloud-regression"
 
 $results = New-Object System.Collections.Generic.List[object]
 
@@ -65,6 +67,10 @@ $results.Add((Invoke-And-Capture -Name "04-linked-cloud-regression-suite" -Actio
   powershell -NoProfile -ExecutionPolicy Bypass -File $linkedCloudScript -OutputRoot $linkedCloudRoot
 }))
 
+$results.Add((Invoke-And-Capture -Name "05-cloud-regression-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $cloudRegressionScript -OutputRoot $cloudRoot
+}))
+
 $lines = @()
 $lines += "# End-To-End Proof Pack"
 $lines += ""
@@ -76,6 +82,7 @@ $lines += "- Full regression pack with real-service coverage"
 $lines += "- Client policy provisioning proof"
 $lines += "- Licensing proof pack"
 $lines += "- Linked-cloud regression suite"
+$lines += "- Cloud regression suite"
 $lines += ""
 $lines += "## Results"
 $lines += ""
@@ -90,6 +97,7 @@ $lines += "- [Full regression summary]($($fullRegressionRoot -replace '\\','/')/
 $lines += "- [Provisioning proof summary]($($provisioningRoot -replace '\\','/')/PROVISIONING_SUMMARY.md)"
 $lines += "- [Licensing proof report]($($licensingRoot -replace '\\','/')/LICENSING_PROOF_REPORT.md)"
 $lines += "- [Linked cloud regression summary]($($linkedCloudRoot -replace '\\','/')/LINKED_CLOUD_REGRESSION_SUMMARY.md)"
+$lines += "- [Cloud regression summary]($($cloudRoot -replace '\\','/')/CLOUD_REGRESSION_SUMMARY.md)"
 $lines += ""
 $lines += "## Scope covered"
 $lines += ""
@@ -100,6 +108,7 @@ $lines += "- Server-managed signed client policy"
 $lines += "- Pre-install client provisioning from the server side"
 $lines += "- Trial, expired, production/full, and capacity enforcement scenarios"
 $lines += "- Linked-cloud claim, replacement, renewal check-in, and key-rotation rehearsals"
+$lines += "- Cloud unit/integration coverage, publish validation, and live ready/login smoke"
 
 Set-Content -Path $summaryPath -Value $lines -Encoding UTF8
 
