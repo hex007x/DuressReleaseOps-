@@ -12,6 +12,8 @@ $licensingProofScript = Join-Path $scriptRoot "exercise-licensing-proof-pack.ps1
 $linkedCloudScript = Join-Path $scriptRoot "exercise-linked-cloud-regression-suite.ps1"
 $cloudRegressionScript = Join-Path $scriptRoot "exercise-cloud-regression-suite.ps1"
 $knownIssueRegressionScript = Join-Path $scriptRoot "exercise-known-issue-regression-suite.ps1"
+$commercialRegressionScript = Join-Path $scriptRoot "exercise-commercial-regression-suite.ps1"
+$msiUpgradeMetadataScript = Join-Path $scriptRoot "exercise-msi-upgrade-metadata-suite.ps1"
 $logsRoot = Join-Path $OutputRoot "logs"
 $summaryPath = Join-Path $OutputRoot "E2E_PROOF_REPORT.md"
 
@@ -50,6 +52,8 @@ $licensingRoot = Join-Path $OutputRoot "licensing-proof"
 $linkedCloudRoot = Join-Path $OutputRoot "linked-cloud"
 $cloudRoot = Join-Path $OutputRoot "cloud-regression"
 $knownIssueRoot = Join-Path $OutputRoot "known-issue-regressions"
+$commercialRoot = Join-Path $OutputRoot "commercial-regression"
+$msiUpgradeRoot = Join-Path $OutputRoot "msi-upgrade-metadata"
 
 $results = New-Object System.Collections.Generic.List[object]
 
@@ -77,6 +81,14 @@ $results.Add((Invoke-And-Capture -Name "06-known-issue-regression-suite" -Action
   powershell -NoProfile -ExecutionPolicy Bypass -File $knownIssueRegressionScript -OutputRoot $knownIssueRoot
 }))
 
+$results.Add((Invoke-And-Capture -Name "07-commercial-regression-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $commercialRegressionScript -OutputRoot $commercialRoot
+}))
+
+$results.Add((Invoke-And-Capture -Name "08-msi-upgrade-metadata-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $msiUpgradeMetadataScript -OutputRoot $msiUpgradeRoot
+}))
+
 $lines = @()
 $lines += "# End-To-End Proof Pack"
 $lines += ""
@@ -90,6 +102,8 @@ $lines += "- Licensing proof pack"
 $lines += "- Linked-cloud regression suite"
 $lines += "- Cloud regression suite"
 $lines += "- Known-issue regression suite"
+$lines += "- Commercial regression suite"
+$lines += "- MSI upgrade metadata suite"
 $lines += ""
 $lines += "## Results"
 $lines += ""
@@ -106,6 +120,8 @@ $lines += "- [Licensing proof report]($($licensingRoot -replace '\\','/')/LICENS
 $lines += "- [Linked cloud regression summary]($($linkedCloudRoot -replace '\\','/')/LINKED_CLOUD_REGRESSION_SUMMARY.md)"
 $lines += "- [Cloud regression summary]($($cloudRoot -replace '\\','/')/CLOUD_REGRESSION_SUMMARY.md)"
 $lines += "- [Known-issue regression summary]($($knownIssueRoot -replace '\\','/')/KNOWN_ISSUE_REGRESSION_SUMMARY.md)"
+$lines += "- [Commercial regression summary]($($commercialRoot -replace '\\','/')/COMMERCIAL_REGRESSION_SUMMARY.md)"
+$lines += "- [MSI upgrade metadata summary]($($msiUpgradeRoot -replace '\\','/')/MSI_UPGRADE_METADATA_SUMMARY.md)"
 $lines += ""
 $lines += "## Scope covered"
 $lines += ""
@@ -117,6 +133,8 @@ $lines += "- Pre-install client provisioning from the server side"
 $lines += "- Trial, expired, production/full, and capacity enforcement scenarios"
 $lines += "- Linked-cloud claim, replacement, renewal check-in, and key-rotation rehearsals"
 $lines += "- Cloud unit/integration coverage, publish validation, live ready/login smoke, and authenticated MFA-backed installer access"
+$lines += "- Trial extension, payment activation, subscription lifecycle, and Xero automation business-path regressions"
+$lines += "- Client/server MSI versioning and upgrade-code packaging checks across current and previous cloud artifacts"
 $lines += "- Specific regressions for fixed bugs such as claim-token recovery, admin route posts, TS install guidance, and monitor layout"
 
 Set-Content -Path $summaryPath -Value $lines -Encoding UTF8

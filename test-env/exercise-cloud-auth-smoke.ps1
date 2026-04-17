@@ -14,8 +14,9 @@ $devSettingsPath = Join-Path $cloudRoot "src\DuressCloud.Web\appsettings.Develop
 $initializerPath = Join-Path $cloudRoot "src\DuressCloud.Infrastructure\Persistence\ApplicationDbInitializer.cs"
 $summaryPath = Join-Path $OutputRoot "CLOUD_AUTH_SMOKE_SUMMARY.md"
 $downloadPath = Join-Path $OutputRoot "portal-download-smoke.msi"
+$htmlRoot = Join-Path $OutputRoot "html-snapshots"
 
-New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
+New-Item -ItemType Directory -Force -Path $OutputRoot, $htmlRoot | Out-Null
 
 function Get-HiddenInputValue {
   param(
@@ -128,26 +129,29 @@ function Get-AuthenticatorKeyFromDatabase {
   $username = [string]$parts["Username"]
   $password = [string]$parts["Password"]
   $escapedEmail = $Email.Replace("'", "''")
-  $sql = @"
-select ut.""Value""
-from ""AspNetUsers"" u
-join ""AspNetUserTokens"" ut on ut.""UserId"" = u.""Id""
-where lower(u.""Email"") = lower('$escapedEmail')
-  and ut.""LoginProvider"" = '[AspNetUserStore]'
-  and ut.""Name"" = 'AuthenticatorKey'
+  $sql = @'
+select ut."Value"
+from "AspNetUsers" u
+join "AspNetUserTokens" ut on ut."UserId" = u."Id"
+where lower(u."Email") = lower('{0}')
+  and ut."LoginProvider" = '[AspNetUserStore]'
+  and ut."Name" = 'AuthenticatorKey'
 limit 1;
-"@
+'@ -f $escapedEmail
 
+  $sqlPath = Join-Path $OutputRoot ("auth-key-{0}.sql" -f ([guid]::NewGuid().ToString("N")))
+  Set-Content -Path $sqlPath -Value $sql -Encoding UTF8
   $previousPassword = $env:PGPASSWORD
   try {
     $env:PGPASSWORD = $password
-    $output = & $psqlPath -h $dbHost -p $dbPort -U $username -d $database -t -A -c $sql 2>&1
+    $output = & $psqlPath -h $dbHost -p $dbPort -U $username -d $database -t -A -f $sqlPath 2>&1
     if ($LASTEXITCODE -ne 0) {
       throw ("psql query failed: " + ($output | Out-String).Trim())
     }
   }
   finally {
     $env:PGPASSWORD = $previousPassword
+    Remove-Item -LiteralPath $sqlPath -ErrorAction SilentlyContinue
   }
 
   $value = (($output | Out-String).Trim() -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
@@ -156,6 +160,53 @@ limit 1;
   }
 
   return $value.Trim().ToUpperInvariant()
+}
+
+function Invoke-DatabaseScalar {
+  param(
+    [Parameter(Mandatory = $true)][string]$ConnectionString,
+    [Parameter(Mandatory = $true)][string]$Sql
+  )
+
+  $psqlPath = Get-ChildItem -Path "C:\Program Files" -Recurse -Filter "psql.exe" -ErrorAction SilentlyContinue |
+    Sort-Object FullName |
+    Select-Object -First 1 -ExpandProperty FullName
+
+  if (-not $psqlPath) {
+    throw "Could not locate psql.exe for the database lookup."
+  }
+
+  $parts = @{}
+  foreach ($segment in ($ConnectionString -split ';')) {
+    if ([string]::IsNullOrWhiteSpace($segment) -or $segment.IndexOf('=') -lt 1) {
+      continue
+    }
+
+    $pieces = $segment -split '=', 2
+    $parts[$pieces[0].Trim()] = $pieces[1].Trim()
+  }
+
+  $dbHost = [string]$parts["Host"]
+  $dbPort = [string]$parts["Port"]
+  $database = [string]$parts["Database"]
+  $username = [string]$parts["Username"]
+  $password = [string]$parts["Password"]
+  $sqlPath = Join-Path $OutputRoot ("scalar-{0}.sql" -f ([guid]::NewGuid().ToString("N")))
+  Set-Content -Path $sqlPath -Value $Sql -Encoding UTF8
+  $previousPassword = $env:PGPASSWORD
+  try {
+    $env:PGPASSWORD = $password
+    $output = & $psqlPath -h $dbHost -p $dbPort -U $username -d $database -t -A -f $sqlPath 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      throw ("psql query failed: " + ($output | Out-String).Trim())
+    }
+  }
+  finally {
+    $env:PGPASSWORD = $previousPassword
+    Remove-Item -LiteralPath $sqlPath -ErrorAction SilentlyContinue
+  }
+
+  return (($output | Out-String).Trim() -split "`r?`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -First 1)
 }
 
 function Invoke-FormGet {
@@ -253,6 +304,32 @@ function Invoke-AuthenticatedLogin {
   }
 }
 
+function Assert-PagePresentation {
+  param(
+    [Parameter(Mandatory = $true)][string]$Label,
+    [Parameter(Mandatory = $true)][string]$Url,
+    [Parameter(Mandatory = $true)][Microsoft.PowerShell.Commands.WebRequestSession]$Session,
+    [Parameter(Mandatory = $true)][string[]]$ExpectedText
+  )
+
+  $response = Invoke-FormGet -Url $Url -Session $Session
+  $html = [string]$response.Content
+  $snapshotPath = Join-Path $htmlRoot ($Label + ".html")
+  Set-Content -Path $snapshotPath -Value $html -Encoding UTF8
+
+  foreach ($text in $ExpectedText) {
+    if ($html -notmatch [Regex]::Escape($text)) {
+      throw "Page presentation check failed for $Url. Missing expected text: $text"
+    }
+  }
+
+  return [pscustomobject]@{
+    Label = $Label
+    Url = $Url
+    SnapshotPath = $snapshotPath
+  }
+}
+
 $devSettings = Get-Content $devSettingsPath -Raw | ConvertFrom-Json
 $connectionString = [string]$devSettings.ConnectionStrings.CloudPlatform
 $adminEmail = [string]$devSettings.CloudPlatform.DevelopmentAdminEmail
@@ -266,6 +343,18 @@ if (-not $portalEmailMatch.Success -or -not $portalPasswordMatch.Success) {
 
 $portalEmail = $portalEmailMatch.Groups["value"].Value
 $portalPassword = $portalPasswordMatch.Groups["value"].Value
+$escapedPortalEmail = $portalEmail.Replace("'", "''")
+$portalCustomerSql = @'
+select u."CustomerId"::text
+from "AspNetUsers" u
+where lower(u."Email") = lower('{0}')
+limit 1;
+'@ -f $escapedPortalEmail
+$portalCustomerId = Invoke-DatabaseScalar -ConnectionString $connectionString -Sql $portalCustomerSql
+if ([string]::IsNullOrWhiteSpace($portalCustomerId)) {
+  throw "Could not resolve the seeded portal customer's id from the database."
+}
+
 $base = $BaseUrl.TrimEnd('/')
 $managementLoginUrl = "$base/Management/Login"
 $portalLoginUrl = "$base/Portal/Login"
@@ -279,12 +368,25 @@ if ($managementInstallers.BaseResponse.ResponseUri.AbsolutePath -notlike "/Manag
 }
 
 $managementHtml = [string]$managementInstallers.Content
+Set-Content -Path (Join-Path $htmlRoot "management-installers.html") -Value $managementHtml -Encoding UTF8
 if ($managementHtml -notmatch "Client terminal-services guide") {
   throw "Management installers page did not show the terminal-services guide."
 }
 
 if ($managementHtml -notmatch "\.msi") {
   throw "Management installers page did not show any MSI package references."
+}
+
+$managementChecks = @(
+  @{ Label = "management-users"; Url = "$base/Management/Users"; Expected = @("INTERNAL AND EXTERNAL USERS", "Back to management", "Create staff user") },
+  @{ Label = "management-operations"; Url = "$base/Management/Operations"; Expected = @("Operations", "Operational queue", "Recent automation") },
+  @{ Label = "admin-customers"; Url = "$base/Admin/Customers"; Expected = @("Customers", "Status", "Create customer") },
+  @{ Label = "admin-customer-details"; Url = "$base/Admin/Customers/Details/$portalCustomerId"; Expected = @("CUSTOMER DETAIL", "Subscriptions", "Payment requests") }
+)
+
+$pageSnapshots = New-Object System.Collections.Generic.List[object]
+foreach ($check in $managementChecks) {
+  $pageSnapshots.Add((Assert-PagePresentation -Label $check.Label -Url $check.Url -Session $managementAuth.Session -ExpectedText $check.Expected))
 }
 
 $portalAuth = Invoke-AuthenticatedLogin -Name "Portal" -LoginUrl $portalLoginUrl -Email $portalEmail -Password $portalPassword -ConnectionString $connectionString -SuccessPrefix "/Portal" -ReturnUrl "/Portal/Downloads"
@@ -295,6 +397,7 @@ if ($portalDownloads.BaseResponse.ResponseUri.AbsolutePath -notlike "/Portal/Dow
 
 $portalHtml = [string]$portalDownloads.Content
 Set-Content -Path (Join-Path $OutputRoot "portal-downloads.html") -Value $portalHtml -Encoding UTF8
+Set-Content -Path (Join-Path $htmlRoot "portal-downloads.html") -Value $portalHtml -Encoding UTF8
 if ($portalHtml -notmatch "Download the current Duress Alert software") {
   throw "Portal downloads page did not render the expected downloads content."
 }
@@ -318,6 +421,16 @@ if ($downloadFile.Length -le 0) {
   throw "Portal installer download produced an empty file."
 }
 
+$portalChecks = @(
+  @{ Label = "portal-subscriptions"; Url = "$base/Portal/Subscriptions"; Expected = @("Subscriptions", "Status", "Renewal") },
+  @{ Label = "portal-payments"; Url = "$base/Portal/Payments"; Expected = @("Payments", "Status", "Amount") },
+  @{ Label = "portal-trial"; Url = "$base/Portal/Trial"; Expected = @("Trial", "trial", "request") }
+)
+
+foreach ($check in $portalChecks) {
+  $pageSnapshots.Add((Assert-PagePresentation -Label $check.Label -Url $check.Url -Session $portalAuth.Session -ExpectedText $check.Expected))
+}
+
 $summary = @()
 $summary += "# Cloud Auth Smoke"
 $summary += ""
@@ -327,9 +440,12 @@ $summary += "## Coverage"
 $summary += ""
 $summary += "- Staff login with MFA completion when required"
 $summary += "- Management installers page access"
+$summary += "- Management users, operations, and admin customer detail access"
 $summary += "- Installer guide presence and MSI catalog visibility"
 $summary += "- Portal login with MFA completion when required"
 $summary += "- Portal downloads page access"
+$summary += "- Portal subscriptions, payments, and trial access"
+$summary += "- HTML page snapshots for key authenticated pages"
 $summary += "- Real MSI download from the portal"
 $summary += ""
 $summary += "## Results"
@@ -337,6 +453,10 @@ $summary += ""
 $summary += "- Management final path: $($managementAuth.FinalPath)"
 $summary += "- Portal final path: $($portalAuth.FinalPath)"
 $summary += "- Downloaded installer: [$($downloadFile.Name)]($($downloadFile.FullName -replace '\\','/')) ($($downloadFile.Length) bytes)"
+$summary += "- Page snapshots:"
+foreach ($snapshot in $pageSnapshots) {
+  $summary += "  - [$($snapshot.Label)]($($snapshot.SnapshotPath -replace '\\','/'))"
+}
 
 Set-Content -Path $summaryPath -Value $summary -Encoding UTF8
 

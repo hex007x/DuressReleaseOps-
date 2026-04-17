@@ -251,6 +251,8 @@ That pack gathers:
 - cloud unit/integration/publish smoke
 - authenticated cloud staff and portal smoke with MFA completion plus portal installer download
 - known-issue regression checks for previously fixed bugs
+- commercial regressions for trial extension, payment activation, subscription lifecycle, and Xero automation
+- MSI upgrade metadata checks across current and previous cloud-hosted client/server packages
 - policy suite
 - compatibility suite
 - linked-cloud claim/check-in/replacement/key-rotation regressions when the real service is available
