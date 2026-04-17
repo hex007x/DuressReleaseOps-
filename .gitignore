@@ -1,0 +1,6 @@
+test-env/sandbox/
+test-env/build/
+test-env/server-build/
+__pycache__/
+*.InstallLog
+*.pdb
