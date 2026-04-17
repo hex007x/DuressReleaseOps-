@@ -11,6 +11,7 @@ $provisioningScript = Join-Path $scriptRoot "exercise-client-policy-provisioning
 $licensingProofScript = Join-Path $scriptRoot "exercise-licensing-proof-pack.ps1"
 $linkedCloudScript = Join-Path $scriptRoot "exercise-linked-cloud-regression-suite.ps1"
 $cloudRegressionScript = Join-Path $scriptRoot "exercise-cloud-regression-suite.ps1"
+$knownIssueRegressionScript = Join-Path $scriptRoot "exercise-known-issue-regression-suite.ps1"
 $logsRoot = Join-Path $OutputRoot "logs"
 $summaryPath = Join-Path $OutputRoot "E2E_PROOF_REPORT.md"
 
@@ -48,6 +49,7 @@ $provisioningRoot = Join-Path $OutputRoot "policy-provisioning"
 $licensingRoot = Join-Path $OutputRoot "licensing-proof"
 $linkedCloudRoot = Join-Path $OutputRoot "linked-cloud"
 $cloudRoot = Join-Path $OutputRoot "cloud-regression"
+$knownIssueRoot = Join-Path $OutputRoot "known-issue-regressions"
 
 $results = New-Object System.Collections.Generic.List[object]
 
@@ -71,6 +73,10 @@ $results.Add((Invoke-And-Capture -Name "05-cloud-regression-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $cloudRegressionScript -OutputRoot $cloudRoot
 }))
 
+$results.Add((Invoke-And-Capture -Name "06-known-issue-regression-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $knownIssueRegressionScript -OutputRoot $knownIssueRoot
+}))
+
 $lines = @()
 $lines += "# End-To-End Proof Pack"
 $lines += ""
@@ -83,6 +89,7 @@ $lines += "- Client policy provisioning proof"
 $lines += "- Licensing proof pack"
 $lines += "- Linked-cloud regression suite"
 $lines += "- Cloud regression suite"
+$lines += "- Known-issue regression suite"
 $lines += ""
 $lines += "## Results"
 $lines += ""
@@ -98,6 +105,7 @@ $lines += "- [Provisioning proof summary]($($provisioningRoot -replace '\\','/')
 $lines += "- [Licensing proof report]($($licensingRoot -replace '\\','/')/LICENSING_PROOF_REPORT.md)"
 $lines += "- [Linked cloud regression summary]($($linkedCloudRoot -replace '\\','/')/LINKED_CLOUD_REGRESSION_SUMMARY.md)"
 $lines += "- [Cloud regression summary]($($cloudRoot -replace '\\','/')/CLOUD_REGRESSION_SUMMARY.md)"
+$lines += "- [Known-issue regression summary]($($knownIssueRoot -replace '\\','/')/KNOWN_ISSUE_REGRESSION_SUMMARY.md)"
 $lines += ""
 $lines += "## Scope covered"
 $lines += ""
@@ -109,6 +117,7 @@ $lines += "- Pre-install client provisioning from the server side"
 $lines += "- Trial, expired, production/full, and capacity enforcement scenarios"
 $lines += "- Linked-cloud claim, replacement, renewal check-in, and key-rotation rehearsals"
 $lines += "- Cloud unit/integration coverage, publish validation, and live ready/login smoke"
+$lines += "- Specific regressions for fixed bugs such as claim-token recovery, admin route posts, TS install guidance, and monitor layout"
 
 Set-Content -Path $summaryPath -Value $lines -Encoding UTF8
 

@@ -16,6 +16,7 @@ $clientRuntimeScript = Join-Path $scriptRoot "verify-windows-client-runtime.ps1"
 $serverTestsProject = Join-Path $workspaceRoot "_external\DuressServer2025\DuressServer2025.Tests\DuressServer2025.Tests.csproj"
 $serverTestsExe = Join-Path $workspaceRoot "_external\DuressServer2025\DuressServer2025.Tests\bin\Release\DuressServer2025.Tests.exe"
 $cloudRegressionScript = Join-Path $scriptRoot "exercise-cloud-regression-suite.ps1"
+$knownIssueRegressionScript = Join-Path $scriptRoot "exercise-known-issue-regression-suite.ps1"
 $policySuiteScript = Join-Path $scriptRoot "exercise-client-policy-suite.ps1"
 $compatSuiteScript = Join-Path $scriptRoot "exercise-compatibility-suite.ps1"
 $incidentSuiteScript = Join-Path $scriptRoot "exercise-incident-suite.ps1"
@@ -110,6 +111,10 @@ $results.Add((Invoke-And-Capture -Name "02b-cloud-regression-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $cloudRegressionScript
 }))
 
+$results.Add((Invoke-And-Capture -Name "02c-known-issue-regression-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $knownIssueRegressionScript
+}))
+
 $results.Add((Invoke-And-Capture -Name "03-policy-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $policySuiteScript
 }))
@@ -202,7 +207,7 @@ else {
 $summary += ""
 $summary += "## Notes"
 $summary += ""
-$summary += "- This pack combines client unit tests, server regression tests, cloud regression, policy/compatibility suites, linked-cloud licensing regressions, and available visual captures."
+$summary += "- This pack combines client unit tests, server regression tests, cloud regression, known-issue regressions, policy/compatibility suites, linked-cloud licensing regressions, and available visual captures."
 $summary += "- Real-service incident/licensing/linked-cloud suites only run when `DuressAlertService` is already installed and running."
 $summary += "- The monitor screenshot is captured against the isolated policy-suite server-data root so it reflects policy-aware client state."
 
