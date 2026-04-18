@@ -35,3 +35,7 @@ The migrated harness includes the broader regression additions:
 - `test-env/exercise-full-regression-pack.ps1`
 - `test-env/exercise-e2e-proof-pack.ps1`
 - `test-env/exercise-linked-cloud-regression-suite.ps1`
+
+## Tracking
+
+- `TEST_COVERAGE_TRACKER.md` keeps the running checklist for new work so we record unit, integration, and regression protection as features and fixes land.
