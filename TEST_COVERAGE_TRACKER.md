@@ -29,6 +29,7 @@ Use these status values:
 | 2026-04-18 | Stripe-first payment link generation | Done | Partial | Done | `PaymentLinkGeneratorTests.cs`; cloud integration suite passed; cloud regression passed |
 | 2026-04-18 | Stripe webhook tracking and primary paid activation | Done | Partial | Done | `StripeWebhookProcessorTests.cs`; cloud integration suite passed; cloud regression passed |
 | 2026-04-18 | Stripe-paid accounting sync into Xero after activation | Done | Partial | Done | `PaymentAccountingSyncServiceTests.cs`; `PaymentActivationServiceTests.cs`; `XeroConnectionSettingsProviderTests.cs`; cloud regression passed |
+| 2026-04-18 | Manual Stripe status sync for dev and test without webhooks | Done | Partial | Done | `StripePaymentSyncServiceTests.cs`; admin payment workflow updated; cloud regression passed |
 | 2026-04-18 | Payment workflow routing for Stripe vs Xero vs manual | Done | Partial | Done | Added payment workflow model/config/UI coverage; cloud regression passed |
 | 2026-04-18 | Xero auto-created contact email suppression | Done | Partial | Done | `XeroAutoCreatedContactFactoryTests.cs`; `XeroConnectionSettingsProviderTests.cs`; cloud regression passed |
 | 2026-04-18 | Xero default sales account for Duress | Done | Partial | Done | Default now falls back to `210`; covered through provider/config tests and cloud regression |
