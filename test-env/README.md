@@ -250,6 +250,7 @@ That pack gathers:
 - server regression tests
 - cloud unit/integration/publish smoke
 - authenticated cloud staff and portal smoke with MFA completion plus portal installer download
+- public customer signup, invite/password setup, MFA enrolment, legal acceptance, self-service trial unlock, download gating, and self-service purchase creation
 - known-issue regression checks for previously fixed bugs
 - commercial regressions for trial extension, payment activation, subscription lifecycle, and Xero automation
 - MSI upgrade metadata checks across current and previous cloud-hosted client/server packages
@@ -258,6 +259,20 @@ That pack gathers:
 - linked-cloud claim/check-in/replacement/key-rotation regressions when the real service is available
 - visual client screenshots
 - policy monitor screenshot
+
+Run the focused customer-onboarding journey gate directly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-customer-onboarding-regression-suite.ps1
+```
+
+That suite proves:
+
+- public signup creates a fresh organisation and first portal admin
+- invite-driven password setup and MFA enrolment complete
+- downloads stay locked before entitlement
+- trial terms acceptance unlocks a self-service trial and downloads
+- purchase terms acceptance unlocks self-service purchase creation and a pending payment page
 
 It writes a timestamped artifact folder under:
 

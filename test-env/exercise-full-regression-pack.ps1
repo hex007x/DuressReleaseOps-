@@ -16,6 +16,7 @@ $clientRuntimeScript = Join-Path $scriptRoot "verify-windows-client-runtime.ps1"
 $serverTestsProject = Join-Path $workspaceRoot "_external\DuressServer2025\DuressServer2025.Tests\DuressServer2025.Tests.csproj"
 $serverTestsExe = Join-Path $workspaceRoot "_external\DuressServer2025\DuressServer2025.Tests\bin\Release\DuressServer2025.Tests.exe"
 $cloudRegressionScript = Join-Path $scriptRoot "exercise-cloud-regression-suite.ps1"
+$customerOnboardingRegressionScript = Join-Path $scriptRoot "exercise-customer-onboarding-regression-suite.ps1"
 $knownIssueRegressionScript = Join-Path $scriptRoot "exercise-known-issue-regression-suite.ps1"
 $commercialRegressionScript = Join-Path $scriptRoot "exercise-commercial-regression-suite.ps1"
 $msiUpgradeMetadataScript = Join-Path $scriptRoot "exercise-msi-upgrade-metadata-suite.ps1"
@@ -113,15 +114,19 @@ $results.Add((Invoke-And-Capture -Name "02b-cloud-regression-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $cloudRegressionScript
 }))
 
-$results.Add((Invoke-And-Capture -Name "02c-known-issue-regression-suite" -Action {
+$results.Add((Invoke-And-Capture -Name "02c-customer-onboarding-regression-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $customerOnboardingRegressionScript
+}))
+
+$results.Add((Invoke-And-Capture -Name "02d-known-issue-regression-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $knownIssueRegressionScript
 }))
 
-$results.Add((Invoke-And-Capture -Name "02d-commercial-regression-suite" -Action {
+$results.Add((Invoke-And-Capture -Name "02e-commercial-regression-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $commercialRegressionScript
 }))
 
-$results.Add((Invoke-And-Capture -Name "02e-msi-upgrade-metadata-suite" -Action {
+$results.Add((Invoke-And-Capture -Name "02f-msi-upgrade-metadata-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $msiUpgradeMetadataScript
 }))
 
@@ -217,7 +222,7 @@ else {
 $summary += ""
 $summary += "## Notes"
 $summary += ""
-$summary += "- This pack combines client unit tests, server regression tests, cloud regression, known-issue regressions, commercial regressions, MSI upgrade metadata checks, policy/compatibility suites, linked-cloud licensing regressions, and available visual captures."
+$summary += "- This pack combines client unit tests, server regression tests, cloud regression, customer onboarding regressions, known-issue regressions, commercial regressions, MSI upgrade metadata checks, policy/compatibility suites, linked-cloud licensing regressions, and available visual captures."
 $summary += "- Real-service incident/licensing/linked-cloud suites only run when `DuressAlertService` is already installed and running."
 $summary += "- The monitor screenshot is captured against the isolated policy-suite server-data root so it reflects policy-aware client state."
 
