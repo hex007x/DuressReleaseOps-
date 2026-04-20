@@ -15,6 +15,8 @@ $integrationTestsProject = Join-Path $cloudRoot "tests\DuressCloud.Web.Integrati
 $webProject = Join-Path $cloudRoot "src\DuressCloud.Web\DuressCloud.Web.csproj"
 $cloudAuthSmokeScript = Join-Path $scriptRoot "exercise-cloud-auth-smoke.ps1"
 $customerOnboardingScript = Join-Path $scriptRoot "exercise-customer-onboarding-regression-suite.ps1"
+$browserVisualScript = Join-Path $scriptRoot "exercise-cloud-browser-visual-suite.ps1"
+$pricingRegressionScript = Join-Path $scriptRoot "exercise-pricing-regression-suite.ps1"
 $logsRoot = Join-Path $OutputRoot "logs"
 $publishRoot = Join-Path $OutputRoot "publish"
 $summaryPath = Join-Path $OutputRoot "CLOUD_REGRESSION_SUMMARY.md"
@@ -126,6 +128,14 @@ $results.Add((Invoke-And-Capture -Name "06-customer-onboarding-regression" -Acti
   powershell -NoProfile -ExecutionPolicy Bypass -File $customerOnboardingScript -OutputRoot (Join-Path $OutputRoot "customer-onboarding") -BaseUrl $BaseUrl
 }))
 
+$results.Add((Invoke-And-Capture -Name "07-cloud-browser-visual" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $browserVisualScript -OutputRoot (Join-Path $OutputRoot "cloud-browser-visual") -BaseUrl $BaseUrl
+}))
+
+$results.Add((Invoke-And-Capture -Name "08-pricing-regression" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $pricingRegressionScript -OutputRoot (Join-Path $OutputRoot "pricing-regression")
+}))
+
 $summary = @()
 $summary += "# Cloud Regression Suite"
 $summary += ""
@@ -139,6 +149,8 @@ $summary += "- Release publish validation"
 $summary += "- Live cloud ready/health/login smoke against $BaseUrl"
 $summary += "- Authenticated management and portal smoke with MFA completion and portal MSI download"
 $summary += "- Customer signup, invite/MFA onboarding, legal acceptance, self-service trial unlock, self-service purchase creation, and download gating"
+$summary += "- Browser-driven rendered-page proof with screenshots for signup, portal onboarding, downloads unlock, payments, and management pages"
+$summary += "- Pricing foundation, quote/payment/subscription snapshot carry-through, and admin commercial snapshot visibility"
 $summary += ""
 $summary += "## Results"
 $summary += ""

@@ -16,6 +16,11 @@ For each meaningful change, record:
 - whether a regression gate was added or rerun
 - where the proof lives
 
+Shared test-guidance ownership:
+
+- cross-project test guides live in `DuressReleaseOps/docs`
+- cloud/commercial design and quality strategy docs live in `DuressCloud/docs`
+
 Use these status values:
 
 - `Done`
@@ -47,14 +52,30 @@ Use these status values:
 | 2026-04-18 | Self-service portal onboarding and purchase | Done | Partial | Done | portal onboarding and purchase tests added; cloud regression passed |
 | 2026-04-18 | Guided trial install handoff | Done | Partial | Done | setup script/output tests added; cloud regression passed |
 | 2026-04-19 | Customer onboarding journey from signup through trial/purchase gating | Done | Partial | Done | New `exercise-customer-onboarding-regression-suite.ps1` proves signup, invite/password setup, MFA, legal acceptance, trial download unlock, and self-service purchase creation; wired into cloud/full/e2e release gates |
+| 2026-04-19 | Pricing foundation entities, billing-plan seed, and product family/version/offer backfill | Done | Partial | Done | `PricingFoundationInitializerTests.cs`; dedicated pricing regression suite added and cloud regression suite passed with pricing gate included |
+| 2026-04-19 | Quote pricing snapshots, expired-quote protection, and quote-prefill repricing protection | Done | Partial | Done | `AdminQuoteCreatePricingSnapshotTests.cs`; `AdminPaymentCreateTests.cs`; dedicated pricing regression suite added and passing; quote-based payment creation now blocks expired quotes and prefers snapshot values over drifted commercial fields |
+| 2026-04-19 | Subscription snapshot carry-through, renewal snapshot reuse, renewal-pricing policy behavior, sold renewal-term carry-through, renewal-prefill repricing protection, and admin commercial snapshot visibility | Done | Partial | Done | `SubscriptionLifecycleServiceTests.cs`; `AdminPaymentCreateTests.cs`; `MarkupRegressionTests.cs`; dedicated pricing regression suite added and passing; renewals now carry an explicit pricing policy and sold renewal term so standard locked renewals stay protected, current-offer renewals can intentionally reprice, and multi-year renewals extend by the purchased term |
+| 2026-04-19 | Admin commercial-offer management and catalog-sync protection for term-based renewal pricing | Done | Done | Done | `AdminProductOfferManagementTests.cs`; `PricingFoundationInitializerTests.cs`; `MarkupRegressionTests.cs`; integration route coverage added; local DB migration applied; pricing and cloud regression suites passed with the new offer-management slice in place |
+| 2026-04-19 | Governance reasons and immutable audit coverage for negotiated discounts and commercial-offer changes | Done | Done | Done | `AdminProductOverrideGovernanceTests.cs`; `AdminProductOfferManagementTests.cs`; `MarkupRegressionTests.cs`; cloud unit + integration suites passed; pricing regression passed; cloud regression passed after clearing stale build daemons so the local app and Release build could coexist cleanly |
+| 2026-04-19 | Named commercial offers with approval-state control so only approved offers drive live pricing and renewal repricing | Done | Done | Done | `AdminProductOfferManagementTests.cs`; `AdminPaymentCreateTests.cs`; `PricingFoundationInitializerTests.cs`; `MarkupRegressionTests.cs`; migration `20260419063305_AddProductVersionOfferApprovalWorkflow`; full cloud unit + integration suites passed; pricing regression passed; cloud regression passed |
+| 2026-04-19 | Product migration rule foundation with governed admin management for tier upgrades and legacy replacement paths | Done | Done | Done | `AdminProductMigrationRuleTests.cs`; `MarkupRegressionTests.cs`; migration `20260419070359_AddProductMigrationRuleFoundation`; full cloud unit + integration suites passed; pricing regression passed; cloud regression passed |
+| 2026-04-19 | Migration-aware quote and payment snapshots so commercial records preserve the selected product migration rule and pricing reason | Done | Done | Done | `AdminQuoteCreatePricingSnapshotTests.cs`; `AdminPaymentCreateTests.cs`; `MarkupRegressionTests.cs`; migration `20260419072453_AddMigrationRuleCommercialLinkage`; full cloud unit + integration suites passed; pricing regression passed; cloud regression passed |
+| 2026-04-19 | Migration context carried into subscriptions and surfaced across admin quote, payment, and subscription detail pages | Done | Done | Done | `SubscriptionLifecycleServiceTests.cs`; `MarkupRegressionTests.cs`; migration `20260419074909_CarryMigrationRuleIntoSubscriptions`; full cloud unit + integration suites passed; pricing regression passed; cloud regression passed |
+| 2026-04-19 | Migration pricing strategy enforcement for quote-first and preserve-current-terms workflows | Done | Done | Done | `AdminPaymentCreateTests.cs`; `MarkupRegressionTests.cs`; full cloud unit + integration suites passed; pricing regression passed; cloud regression passed; direct payment creation now blocks `CustomQuoteRequired` migrations, and `PreserveCurrentTermsUntilRenewal` keeps source commercial values instead of repricing onto the target offer |
+| 2026-04-19 | Subscription-originated migration quotes with preserved commercial terms and clearer admin migration guidance | Done | Done | Done | `AdminQuoteCreatePricingSnapshotTests.cs`; `MarkupRegressionTests.cs`; full cloud unit + integration suites passed; pricing regression passed; cloud regression passed; subscription detail now starts governed migration quotes and preserve-current-terms strategy carries the source subscription commercial values into the quote snapshot |
+| 2026-04-19 | Extra negative-path protection for onboarding, governance, and route boundaries | Done | Done | Done | `PortalSelfServiceOnboardingTests.cs`; `AdminProductOfferManagementTests.cs`; `AdminProductMigrationRuleTests.cs`; `PortalEntryTests.cs`; cloud unit suite `188/188`; cloud integration suite `35/35`; governance reasons, legal refusal paths, quote-only product refusal, and anonymous route challenges all re-proved |
+| 2026-04-19 | Cloud browser-backed positive and negative visual proof for signup, onboarding, downloads, payments, and management pages | Partial | Partial | Done | `exercise-cloud-browser-visual-suite.ps1` and `cloud-browser-visual-proof.py`; real browser screenshots now capture signup, invite/password/MFA, blocked downloads before entitlement, trial/purchase disabled before terms, duplicate-signup refusal, anonymous management redirect, portal home/trial/purchase/downloads, pending payment creation, pending payment list/detail behavior without premature receipts, seeded Xero/EFT portal-state proof, seeded paid payment portal-state proof, and management legal/product pages; wired into cloud regression |
+| 2026-04-19 | Repo-local executable proof refresh for Server and Windows client | Done | Partial | Partial | Server harness built with Visual Studio MSBuild and passed via `DuressServer2025.Tests.exe`; Windows client harness built with Visual Studio MSBuild and passed via `Duress2025.Tests.exe`; shared ReleaseOps suites remain the cross-repo regression layer |
 | 2026-04-17 | Claim token repair and legacy-then-claim recovery | Done | Partial | Done | server tests added for legacy-first claim and failed local activation; full regression and licensing proof passed |
 | 2026-04-17 | Known issue regressions for recent admin and installer fixes | Done | Partial | Done | known-issue suite added in `DuressReleaseOps`; full proof pack passed |
 | 2026-04-17 | Authenticated cloud release smoke | Partial | Done | Done | seeded login/MFA smoke added in `DuressReleaseOps`; downloads/installers proof included |
 
 ## Gaps To Keep Closing
 
-- Add more true browser-driven and screenshot-backed end-to-end tests for purchase, payment, and onboarding flows beyond the current HTTP customer-journey gate.
+- Add more true browser-driven and screenshot-backed end-to-end tests for purchase, payment, and onboarding flows beyond the current browser-backed cloud visual suite.
 - Add Stripe webhook end-to-end proof once Stripe becomes the primary paid trigger.
 - Add Xero invoice creation and sync proof for the EFT/manual invoice path.
 - Add upgrade-path regressions for client/server MSI installs as standard release gates.
 - Add more visual/layout assertions for key admin and portal pages.
+- Expand pricing-model regression gates further for quote expiry edge cases, migration pricing, and separate renewal-policy administration once the next commercial slices are in place.
+- Add a real executable automated test layer for `_external/duress-mac`; it is still the weakest repo from a runnable-proof perspective.

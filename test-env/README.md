@@ -251,6 +251,7 @@ That pack gathers:
 - cloud unit/integration/publish smoke
 - authenticated cloud staff and portal smoke with MFA completion plus portal installer download
 - public customer signup, invite/password setup, MFA enrolment, legal acceptance, self-service trial unlock, download gating, and self-service purchase creation
+- pricing foundation, snapshot-backed quote/payment/subscription flows, and admin commercial snapshot visibility
 - known-issue regression checks for previously fixed bugs
 - commercial regressions for trial extension, payment activation, subscription lifecycle, and Xero automation
 - MSI upgrade metadata checks across current and previous cloud-hosted client/server packages
@@ -273,6 +274,23 @@ That suite proves:
 - downloads stay locked before entitlement
 - trial terms acceptance unlocks a self-service trial and downloads
 - purchase terms acceptance unlocks self-service purchase creation and a pending payment page
+
+Run the browser-backed Cloud visual suite directly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-cloud-browser-visual-suite.ps1
+```
+
+That suite proves:
+
+- public signup renders and submits in a real browser
+- invite-driven password setup and MFA enrollment complete in-browser
+- blocked downloads before entitlement are visible in-browser
+- duplicate signup is refused in-browser
+- trial and purchase actions stay disabled until the required terms are accepted
+- anonymous management access is redirected to login in-browser
+- portal home, trial, purchase, payment, and downloads pages render correctly as captured screenshots
+- management legal and governed commercial pages render correctly as captured screenshots
 
 It writes a timestamped artifact folder under:
 

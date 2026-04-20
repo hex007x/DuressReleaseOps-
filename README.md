@@ -17,8 +17,34 @@ This repo is intended to sit inside the shared workspace beside the product repo
 - `DuressCloud`
 - `Duress2025`
 - `_external/DuressServer2025`
+- `_external/duress-mac`
 
 The scripts resolve the workspace from the parent folder of this repo.
+
+## Documentation layout
+
+Shared cross-project guides live in this repo under `docs/`.
+
+Use this split:
+
+- `DuressReleaseOps`
+  - cross-project test guides
+  - release-gate guidance
+  - evidence/proof-pack tracking
+- `DuressCloud`
+  - cloud, portal, billing, licensing-control, and commercial-model docs
+- `_external/DuressServer2025`
+  - server/runtime and licensing-consumer docs
+- `Duress2025`
+  - Windows client runtime/install docs
+- `_external/duress-mac`
+  - Mac client runtime/install docs
+
+Shared guides:
+
+- `docs/PLAIN_ENGLISH_END_TO_END_TEST_GUIDE_2026-04-17.md`
+- `docs/TECHNICAL_BACKEND_AND_PLATFORM_TEST_GUIDE_2026-04-17.md`
+- `docs/REPO_TESTING_AND_DOCUMENTATION_MAP.md`
 
 ## Current focus
 

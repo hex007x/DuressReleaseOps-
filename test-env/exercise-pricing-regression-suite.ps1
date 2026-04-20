@@ -1,5 +1,5 @@
 param(
-  [string]$OutputRoot = (Join-Path $PSScriptRoot ("sandbox\\commercial-regression\\{0}" -f (Get-Date -Format "yyyyMMdd-HHmmss")))
+  [string]$OutputRoot = (Join-Path $PSScriptRoot ("sandbox\\pricing-regression\\{0}" -f (Get-Date -Format "yyyyMMdd-HHmmss")))
 )
 
 Set-StrictMode -Version Latest
@@ -10,7 +10,7 @@ $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $workspaceRoot = Get-DuressWorkspaceRoot -ScriptRoot $scriptRoot
 $cloudTestsProject = Join-Path $workspaceRoot "DuressCloud\tests\DuressCloud.Web.Tests\DuressCloud.Web.Tests.csproj"
 $logsRoot = Join-Path $OutputRoot "logs"
-$summaryPath = Join-Path $OutputRoot "COMMERCIAL_REGRESSION_SUMMARY.md"
+$summaryPath = Join-Path $OutputRoot "PRICING_REGRESSION_SUMMARY.md"
 
 New-Item -ItemType Directory -Force -Path $OutputRoot, $logsRoot | Out-Null
 
@@ -43,37 +43,36 @@ function Invoke-And-Capture {
 }
 
 $results = New-Object System.Collections.Generic.List[object]
-$results.Add((Invoke-And-Capture -Name "01-commercial-cloud-tests" -Action {
+$results.Add((Invoke-And-Capture -Name "01-pricing-cloud-tests" -Action {
   $filter = @(
-    "FullyQualifiedName~PaymentActivationServiceTests",
-    "FullyQualifiedName~PortalPaymentDetailsTests",
+    "FullyQualifiedName~PricingFoundationInitializerTests",
+    "FullyQualifiedName~AdminQuoteCreatePricingSnapshotTests",
+    "FullyQualifiedName~AdminPaymentCreateTests",
     "FullyQualifiedName~SubscriptionLifecycleServiceTests",
-    "FullyQualifiedName~SubscriptionLifecycleAutomationServiceTests",
-    "FullyQualifiedName~SubscriptionOperationsServiceTests",
-    "FullyQualifiedName~XeroSyncAutomationWorkerTests",
-    "FullyQualifiedName~CustomerTrialExtensionRegressionTests"
+    "FullyQualifiedName~MarkupRegressionTests"
   ) -join "|"
 
   & dotnet test $cloudTestsProject --configuration Release --nologo --filter $filter
   if ($LASTEXITCODE -ne 0) {
-    throw "Commercial cloud regression tests failed."
+    throw "Pricing cloud regression tests failed."
   }
 }))
 
 $lines = @()
-$lines += "# Commercial Regression Suite"
+$lines += "# Pricing Regression Suite"
 $lines += ""
 $lines += "Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 $lines += ""
 $lines += "## Coverage"
 $lines += ""
-$lines += "- Trial extension page-model regression"
-$lines += "- Portal payment-detail status and receipt regression"
-$lines += "- Payment activation and fulfillment regression"
-$lines += "- Subscription creation and renewal regression"
-$lines += "- Subscription lifecycle automation regression"
-$lines += "- Subscription operations regression"
-$lines += "- Xero sync automation regression"
+$lines += "- pricing foundation seed and catalog backfill"
+$lines += "- quote pricing snapshot creation"
+$lines += "- payment pricing snapshot creation, quote snapshot reuse, and renewal snapshot reuse"
+$lines += "- expired quote protection before payment creation"
+$lines += "- renewal pricing policy behavior for locked renewals vs current-offer repricing"
+$lines += "- sold renewal term carry-through so multi-year renewals extend subscriptions by the purchased term"
+$lines += "- subscription snapshot carry-through from paid payments"
+$lines += "- admin quote/payment/subscription commercial snapshot visibility"
 $lines += ""
 $lines += "## Results"
 $lines += ""
@@ -85,9 +84,9 @@ foreach ($result in $results) {
 Set-Content -Path $summaryPath -Value $lines -Encoding UTF8
 
 $failed = @($results | Where-Object { -not $_.Success })
-Write-Host "Commercial regression suite written to: $OutputRoot"
+Write-Host "Pricing regression suite written to: $OutputRoot"
 Write-Host "Summary: $summaryPath"
 
 if ($failed.Count -gt 0) {
-  throw ("Commercial regression suite completed with failures: " + (($failed | ForEach-Object { $_.Name }) -join ", "))
+  throw ("Pricing regression suite completed with failures: " + (($failed | ForEach-Object { $_.Name }) -join ", "))
 }

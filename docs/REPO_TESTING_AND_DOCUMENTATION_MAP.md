@@ -1,0 +1,102 @@
+# Repo Testing And Documentation Map
+
+Last updated: `2026-04-19`
+
+## Purpose
+
+This note explains where documentation and testing guidance should live across the five Duress git repositories.
+
+It exists to stop shared guides drifting into the workspace root and to keep repo-specific docs close to the code they describe.
+
+## The five repos
+
+1. `DuressReleaseOps`
+2. `DuressCloud`
+3. `Duress2025`
+4. `_external/DuressServer2025`
+5. `_external/duress-mac`
+
+## Ownership split
+
+### `DuressReleaseOps`
+
+Use for:
+
+- cross-project release orchestration
+- regression and proof-pack harnesses
+- shared testing guides
+- test coverage tracking
+- cross-repo release-readiness evidence
+
+Current shared guides:
+
+- [PLAIN_ENGLISH_END_TO_END_TEST_GUIDE_2026-04-17.md](/D:/Duress/DuressReleaseOps/docs/PLAIN_ENGLISH_END_TO_END_TEST_GUIDE_2026-04-17.md)
+- [TECHNICAL_BACKEND_AND_PLATFORM_TEST_GUIDE_2026-04-17.md](/D:/Duress/DuressReleaseOps/docs/TECHNICAL_BACKEND_AND_PLATFORM_TEST_GUIDE_2026-04-17.md)
+- [TEST_COVERAGE_TRACKER.md](/D:/Duress/DuressReleaseOps/TEST_COVERAGE_TRACKER.md)
+
+### `DuressCloud`
+
+Use for:
+
+- cloud architecture
+- portal/admin user guides
+- customer, payment, licensing-control, and commercial-model docs
+- quality strategy for cloud-driven flows
+- requirements/design/implementation notes for pricing, billing, portal, and lifecycle workflows
+
+Important docs:
+
+- [QUALITY_AND_REGRESSION_STRATEGY.md](/D:/Duress/DuressCloud/docs/QUALITY_AND_REGRESSION_STRATEGY.md)
+- [END_TO_END_LICENSE_AND_CUSTOMER_GUIDE.md](/D:/Duress/DuressCloud/docs/END_TO_END_LICENSE_AND_CUSTOMER_GUIDE.md)
+- [PRICING_AND_COMMERCIAL_MODEL_EVOLUTION_PLAN.md](/D:/Duress/DuressCloud/docs/PRICING_AND_COMMERCIAL_MODEL_EVOLUTION_PLAN.md)
+
+### `_external/DuressServer2025`
+
+Use for:
+
+- Windows server/service install and runtime docs
+- claim/check-in/runtime/licensing-consumer behavior notes
+- server-specific technical testing notes
+
+Primary repo-local guide:
+
+- [SERVER_TECHNICAL_TEST_GUIDE.md](/D:/Duress/_external/DuressServer2025/docs/SERVER_TECHNICAL_TEST_GUIDE.md)
+
+### `Duress2025`
+
+Use for:
+
+- Windows client install/runtime docs
+- MSI parameter docs
+- workstation and terminal-services behavior notes
+- client-specific technical testing notes
+
+Primary repo-local guide:
+
+- [WINDOWS_CLIENT_TECHNICAL_TEST_GUIDE.md](/D:/Duress/Duress2025/docs/WINDOWS_CLIENT_TECHNICAL_TEST_GUIDE.md)
+
+### `_external/duress-mac`
+
+Use for:
+
+- Mac client runtime docs
+- build/run notes
+- parity/non-parity notes
+- Mac-specific smoke and technical test notes
+
+Primary repo-local guide:
+
+- [MAC_CLIENT_TECHNICAL_TEST_GUIDE.md](/D:/Duress/_external/duress-mac/docs/MAC_CLIENT_TECHNICAL_TEST_GUIDE.md)
+
+## Working rule
+
+If a document is mainly about one repo’s code or runtime, keep it in that repo.
+
+If a document describes:
+
+- the platform as a whole
+- cross-repo release testing
+- cross-repo regression strategy
+- end-to-end customer journeys spanning Cloud, Server, Client, and billing
+
+then it belongs in `DuressReleaseOps`.
