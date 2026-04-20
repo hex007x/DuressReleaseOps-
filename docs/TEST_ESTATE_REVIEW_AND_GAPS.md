@@ -177,8 +177,10 @@ Main gaps:
 - lighter formal integration-test shape than cloud
 - browser/UI proof is naturally limited because the server is not web-first
 - newly observed manual defects still need executable protection:
-  - notification-provider text boxes appear to load with leading blank spaces, which interferes with paste/edit flows
-  - client-policy monitor state does not currently match reality in the observed build, so policy-status reconciliation needs deeper proof
+  - fixed on 2026-04-20:
+    - notification-provider text boxes now trim persisted values on load/save
+    - client-policy monitor no longer collapses reported-but-unverified clients into `Pending Sync`
+  - remaining policy risk is now combinatorial depth, not the specific observed textbox/status defects
 
 ### `Duress2025`
 
