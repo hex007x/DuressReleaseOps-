@@ -176,6 +176,9 @@ Main gaps:
 
 - lighter formal integration-test shape than cloud
 - browser/UI proof is naturally limited because the server is not web-first
+- newly observed manual defects still need executable protection:
+  - notification-provider text boxes appear to load with leading blank spaces, which interferes with paste/edit flows
+  - client-policy monitor state does not currently match reality in the observed build, so policy-status reconciliation needs deeper proof
 
 ### `Duress2025`
 
