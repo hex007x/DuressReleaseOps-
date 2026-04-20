@@ -85,6 +85,17 @@ function Ensure-RealServiceRunning {
   }
 }
 
+function Stop-LingeringServerUnitTestProcesses {
+  Get-Process -Name "DuressServer2025.Tests" -ErrorAction SilentlyContinue | ForEach-Object {
+    try {
+      Stop-Process -Id $_.Id -Force -ErrorAction Stop
+      Start-Sleep -Milliseconds 500
+    }
+    catch {
+    }
+  }
+}
+
 $results = New-Object System.Collections.Generic.List[object]
 
 $results.Add((Invoke-And-Capture -Name "00-client-config-modes" -Action {
@@ -104,6 +115,7 @@ $results.Add((Invoke-And-Capture -Name "01-client-unit-tests" -Action {
 }))
 
 $results.Add((Invoke-And-Capture -Name "02-server-unit-tests" -Action {
+  Stop-LingeringServerUnitTestProcesses
   & $msbuild (Join-Path $workspaceRoot "_external\\DuressServer2025\\DuressServer2025\\DuressServer2025.csproj") /t:Build /p:Configuration=Release /p:Platform=AnyCPU
   if ($LASTEXITCODE -ne 0) { throw "Server project build failed." }
   & $msbuild $serverTestsProject /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:BuildProjectReferences=false
