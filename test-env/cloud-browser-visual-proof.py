@@ -603,14 +603,22 @@ def main() -> int:
             assert_contains(admin_page, "Legal")
             screenshot(admin_page, screenshots_root / "16-management-legal.png")
 
+            admin_page.goto(f"{base_url}/Management/Communications/Index", wait_until="networkidle")
+            assert_contains(admin_page, "Communications and integration settings")
+            screenshot(admin_page, screenshots_root / "17-management-communications.png")
+
+            admin_page.goto(f"{base_url}/Admin/Communications/Index", wait_until="networkidle")
+            assert_contains(admin_page, "Communications")
+            screenshot(admin_page, screenshots_root / "18-admin-communications-index.png")
+
             admin_page.goto(f"{base_url}/Admin/Products/Index", wait_until="networkidle")
             assert_contains(admin_page, "Products")
-            screenshot(admin_page, screenshots_root / "17-admin-products-index.png")
+            screenshot(admin_page, screenshots_root / "19-admin-products-index.png")
 
             admin_page.goto(f"{base_url}/Admin/Products/Migrations/Index", wait_until="networkidle")
             assert_contains(admin_page, "migration")
-            screenshot(admin_page, screenshots_root / "18-admin-product-migrations.png")
-            notes.append("Management legal and governed commercial admin pages were captured as rendered pages under an authenticated browser session.")
+            screenshot(admin_page, screenshots_root / "20-admin-product-migrations.png")
+            notes.append("Management legal, communications configuration, and governed commercial admin pages were captured as rendered pages under an authenticated browser session.")
         finally:
             browser.close()
 

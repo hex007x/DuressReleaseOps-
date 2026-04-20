@@ -1,6 +1,6 @@
 # Test Estate Review And Gaps
 
-Last updated: `2026-04-19`
+Last updated: `2026-04-21`
 
 ## Purpose
 
@@ -116,6 +116,7 @@ Strong positive proof today:
 - signup and onboarding
 - legal acceptance
 - payments, receipts, and portal payment status refresh
+- communications template rendering, one-off compose, and customer/staff history visibility
 - download entitlement gating
 - pricing snapshot creation and carry-through
 - renewal policy and multi-year term carry-through
@@ -126,6 +127,8 @@ Strong negative proof today:
 
 - duplicate signup protection
 - unsupported password handling
+- anonymous challenge coverage on management/admin/portal communications routes
+- manual one-off send path without a template still logs the exact payload sent
 - missing terms acceptance
 - missing governance-reason rejection for commercial-offer changes
 - missing governance-reason rejection for migration-rule creation
@@ -140,7 +143,7 @@ Strong negative proof today:
 
 Main gap:
 
-- richer browser-driven and visual end-to-end proof beyond the new screenshot-backed cloud visual suite
+- richer browser-driven and visual end-to-end proof beyond the new screenshot-backed cloud visual suite, especially drilling deeper into communications detail views and multi-step lifecycle email verification
 
 ### `_external/DuressServer2025`
 
