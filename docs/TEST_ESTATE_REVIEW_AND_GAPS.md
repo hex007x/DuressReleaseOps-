@@ -86,6 +86,7 @@ What these currently prove well:
 - major cross-feature flows still work release to release
 - recent known defects stay fixed
 - pricing/migration/commercial drift is being caught much earlier than before
+- communications template/configuration and lifecycle email cadence now have a named focused regression gate as well
 
 ### 4. Repo-local runtime tests
 

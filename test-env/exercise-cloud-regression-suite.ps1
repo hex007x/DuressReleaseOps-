@@ -17,6 +17,7 @@ $cloudAuthSmokeScript = Join-Path $scriptRoot "exercise-cloud-auth-smoke.ps1"
 $customerOnboardingScript = Join-Path $scriptRoot "exercise-customer-onboarding-regression-suite.ps1"
 $browserVisualScript = Join-Path $scriptRoot "exercise-cloud-browser-visual-suite.ps1"
 $pricingRegressionScript = Join-Path $scriptRoot "exercise-pricing-regression-suite.ps1"
+$communicationsRegressionScript = Join-Path $scriptRoot "exercise-communications-regression-suite.ps1"
 $logsRoot = Join-Path $OutputRoot "logs"
 $publishRoot = Join-Path $OutputRoot "publish"
 $summaryPath = Join-Path $OutputRoot "CLOUD_REGRESSION_SUMMARY.md"
@@ -136,6 +137,10 @@ $results.Add((Invoke-And-Capture -Name "08-pricing-regression" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $pricingRegressionScript -OutputRoot (Join-Path $OutputRoot "pricing-regression")
 }))
 
+$results.Add((Invoke-And-Capture -Name "09-communications-regression" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $communicationsRegressionScript -OutputRoot (Join-Path $OutputRoot "communications-regression")
+}))
+
 $summary = @()
 $summary += "# Cloud Regression Suite"
 $summary += ""
@@ -151,6 +156,7 @@ $summary += "- Authenticated management and portal smoke with MFA completion and
 $summary += "- Customer signup, invite/MFA onboarding, legal acceptance, self-service trial unlock, self-service purchase creation, and download gating"
 $summary += "- Browser-driven rendered-page proof with screenshots for signup, portal onboarding, downloads unlock, payments, and management pages"
 $summary += "- Pricing foundation, quote/payment/subscription snapshot carry-through, and admin commercial snapshot visibility"
+$summary += "- Communications template/configuration history coverage plus scheduled trial and renewal cadence regression"
 $summary += ""
 $summary += "## Results"
 $summary += ""

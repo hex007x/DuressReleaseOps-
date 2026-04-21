@@ -279,6 +279,12 @@ Run the browser-backed Cloud visual suite directly:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-cloud-browser-visual-suite.ps1
+
+Run the focused communications regression gate directly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-communications-regression-suite.ps1
+```
 ```
 
 That suite proves:
