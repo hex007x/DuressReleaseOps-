@@ -243,6 +243,26 @@ Current truth:
 - parity/support/version docs now exist in the Mac repo
 - meaningful runtime proof still requires a real Mac
 
+Current remote access path from this Windows machine:
+
+- SSH alias: `duress-mac`
+- Host: `192.168.20.73`
+- User: `itd`
+- Dedicated key: `C:\Users\jforr\.ssh\id_ed25519_duress_mac`
+
+Quick verify command:
+
+```powershell
+ssh -o BatchMode=yes duress-mac "hostname && sw_vers"
+```
+
+If this fails after a restart:
+
+1. check `C:\Users\jforr\.ssh\config`
+2. confirm `C:\Users\jforr\.ssh\id_ed25519_duress_mac` still exists
+3. retry `ssh -vvv duress-mac "exit"`
+4. only fall back to password auth if key auth stops working again
+
 ## Release flow
 
 The enforced release path is:
