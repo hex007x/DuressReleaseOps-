@@ -263,6 +263,13 @@ Run the focused server deployment UI smoke that checks the Policy, Deployment, a
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-server-deployment-ui-smoke-suite.ps1
 ```
 
+Run the shared Mac regression entry point that prepares policy fixtures, links the live-session checklist, and can optionally collect a remote Mac snapshot:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-mac-client-regression-suite.ps1
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-mac-client-regression-suite.ps1 -CollectRemoteSnapshot
+```
+
 That pack gathers:
 
 - client unit tests
@@ -290,6 +297,10 @@ That pack gathers:
   - Policy, Deployment, and Licensing control presence
   - deployment wizard metadata
   - screenshots of the key rollout surfaces
+- Mac regression preparation covering:
+  - policy fixture generation from Windows
+  - shared link-out to the Mac live validation checklist
+  - optional SSH snapshot of current Mac app-data state
 - compatibility suite
 - linked-cloud claim/check-in/replacement/key-rotation regressions when the real service is available
 - visual client screenshots

@@ -1,6 +1,6 @@
 # Repo Testing And Documentation Map
 
-Last updated: `2026-04-19`
+Last updated: `2026-04-28`
 
 ## Purpose
 
@@ -88,6 +88,14 @@ Use for:
 Primary repo-local guide:
 
 - [MAC_CLIENT_TECHNICAL_TEST_GUIDE.md](/D:/Duress/_external/duress-mac/docs/MAC_CLIENT_TECHNICAL_TEST_GUIDE.md)
+- [MAC_SUPPORT_ENABLEMENT_RUNBOOK.md](/D:/Duress/_external/duress-mac/docs/MAC_SUPPORT_ENABLEMENT_RUNBOOK.md)
+- [MAC_POLICY_FIXTURE_PACK.md](/D:/Duress/_external/duress-mac/docs/MAC_POLICY_FIXTURE_PACK.md)
+- [MAC_WEBHOOK_FIXTURE_HARNESS.md](/D:/Duress/_external/duress-mac/docs/MAC_WEBHOOK_FIXTURE_HARNESS.md)
+- [MAC_LIVE_VALIDATION_CHECKLIST_2026-04-29.md](/D:/Duress/_external/duress-mac/docs/MAC_LIVE_VALIDATION_CHECKLIST_2026-04-29.md)
+
+Shared entry point from `DuressReleaseOps`:
+
+- [exercise-mac-client-regression-suite.ps1](/D:/Duress/DuressReleaseOps/test-env/exercise-mac-client-regression-suite.ps1)
 
 ## Working rule
 
