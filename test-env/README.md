@@ -268,6 +268,7 @@ Run the shared Mac regression entry point that prepares policy fixtures, links t
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-mac-client-regression-suite.ps1
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-mac-client-regression-suite.ps1 -CollectRemoteSnapshot
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-mac-client-regression-suite.ps1 -CollectRemoteSnapshot -StageRemoteFixtures
 ```
 
 That pack gathers:
@@ -301,6 +302,7 @@ That pack gathers:
   - policy fixture generation from Windows
   - shared link-out to the Mac live validation checklist
   - optional SSH snapshot of current Mac app-data state
+  - optional staging of generated Mac fixtures onto the remote Mac desktop
 - compatibility suite
 - linked-cloud claim/check-in/replacement/key-rotation regressions when the real service is available
 - visual client screenshots

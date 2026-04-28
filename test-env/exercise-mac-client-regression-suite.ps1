@@ -2,6 +2,7 @@ param(
   [string]$OutputRoot = (Join-Path $PSScriptRoot ("sandbox\\mac-client-regression\\{0}" -f (Get-Date -Format "yyyyMMdd-HHmmss"))),
   [string]$MacHost = "duress-mac",
   [switch]$CollectRemoteSnapshot,
+  [switch]$StageRemoteFixtures,
   [switch]$SkipFixtureGeneration
 )
 
@@ -21,6 +22,7 @@ $macPolicyFixtureDoc = Join-Path $macRepoRoot "docs\MAC_POLICY_FIXTURE_PACK.md"
 $logsRoot = Join-Path $OutputRoot "logs"
 $fixtureRoot = Join-Path $OutputRoot "policy-fixtures"
 $summaryPath = Join-Path $OutputRoot "MAC_CLIENT_REGRESSION_SUMMARY.md"
+$remoteFixtureRoot = "~/Desktop/DuressMacFixtures"
 
 New-Item -ItemType Directory -Force -Path $OutputRoot, $logsRoot | Out-Null
 
@@ -48,6 +50,32 @@ function Invoke-And-Capture {
       LogPath = $logPath
       Output = (Get-Content $logPath -Raw)
     }
+  }
+}
+
+function Invoke-RemoteBashScript {
+  param(
+    [Parameter(Mandatory = $true)][string[]]$Lines
+  )
+
+  $tempScriptPath = Join-Path $logsRoot ("remote-script-" + [guid]::NewGuid().ToString("N") + ".sh")
+  $remoteScriptPath = "/tmp/" + [IO.Path]::GetFileName($tempScriptPath)
+  [System.IO.File]::WriteAllText($tempScriptPath, ($Lines -join "`n"), [System.Text.UTF8Encoding]::new($false))
+  try {
+    scp $tempScriptPath "${MacHost}:$remoteScriptPath" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      throw "Could not copy the remote helper script to $MacHost."
+    }
+
+    try {
+      return ssh -o BatchMode=yes $MacHost "bash $remoteScriptPath"
+    }
+    finally {
+      ssh -o BatchMode=yes $MacHost "rm -f $remoteScriptPath" | Out-Null
+    }
+  }
+  finally {
+    Remove-Item -LiteralPath $tempScriptPath -Force -ErrorAction SilentlyContinue
   }
 }
 
@@ -91,20 +119,47 @@ if (-not $SkipFixtureGeneration) {
 
 if ($CollectRemoteSnapshot) {
   $results.Add((Invoke-And-Capture -Name "04-collect-remote-snapshot" -Action {
-    $remoteCommand = @'
-hostname
-sw_vers
-APP_ROOT="$HOME/Library/Application Support/Duress Alert"
-echo "APP_ROOT=$APP_ROOT"
-if [ -d "$APP_ROOT" ]; then
-  ls -la "$APP_ROOT"
-else
-  echo "App root not created yet."
-fi
-'@
-    ssh -o BatchMode=yes $MacHost $remoteCommand
+    Invoke-RemoteBashScript -Lines @(
+      "hostname",
+      "sw_vers",
+      "echo ---",
+      'APP_ROOT="$HOME/Library/Application Support/Duress Alert"',
+      'echo "APP_ROOT=$APP_ROOT"',
+      'if [ -d "$APP_ROOT" ]; then',
+      '  ls -la "$APP_ROOT"',
+      'else',
+      '  echo "App root not created yet."',
+      'fi'
+    )
     if ($LASTEXITCODE -ne 0) {
       throw "Remote Mac snapshot failed."
+    }
+  }))
+}
+
+if ($StageRemoteFixtures -and -not $SkipFixtureGeneration) {
+  $results.Add((Invoke-And-Capture -Name "05-stage-remote-fixtures" -Action {
+    $remoteTargetRoot = (Invoke-RemoteBashScript -Lines @(
+      'TARGET_ROOT="$HOME/Desktop/DuressMacFixtures"',
+      'mkdir -p "$TARGET_ROOT"',
+      'printf "%s\n" "$TARGET_ROOT"'
+    ) | Select-Object -Last 1).Trim()
+    if ([string]::IsNullOrWhiteSpace($remoteTargetRoot)) {
+      throw "Could not determine the remote fixture target root."
+    }
+
+    $remoteTarget = "${MacHost}:$remoteTargetRoot/"
+    scp -r "$fixtureRoot" $remoteTarget
+    if ($LASTEXITCODE -ne 0) {
+      throw "Remote fixture staging failed."
+    }
+
+    Invoke-RemoteBashScript -Lines @(
+      'TARGET_ROOT="$HOME/Desktop/DuressMacFixtures"',
+      'find "$TARGET_ROOT" -maxdepth 2 -type f | sort'
+    )
+    if ($LASTEXITCODE -ne 0) {
+      throw "Remote fixture verification failed."
     }
   }))
 }
@@ -123,18 +178,22 @@ foreach ($result in $results) {
 $lines += ""
 $lines += "## Ready for the next live Mac session"
 $lines += ""
-$lines += "- Shared entry point exists in `DuressReleaseOps`."
+$lines += '- Shared entry point exists in `DuressReleaseOps`.'
 $lines += "- Mac policy fixtures can be generated from Windows before touching the Mac."
+$lines += '- Generated fixtures can be staged onto the Mac desktop when `-StageRemoteFixtures` is used.'
 $lines += "- The Mac repo now includes a local state inspector, local webhook sink, and a date-specific live-session checklist."
 $lines += "- Live connect proof is still blocked until the real Mac desktop can accept the Local Network prompt if it appears."
 $lines += ""
 $lines += "## Next commands on the Mac"
 $lines += ""
-$lines += "```sh"
+$lines += '```sh'
 $lines += "bash scripts/run-mac-validation-batch.sh"
 $lines += "bash scripts/inspect-mac-client-state.sh"
 $lines += "bash scripts/start-mac-webhook-fixture.sh"
-$lines += "```"
+$lines += '```'
+$lines += ""
+$lines += "Remote fixture staging target:"
+$lines += $remoteFixtureRoot
 $lines += ""
 $lines += "## References"
 $lines += ""

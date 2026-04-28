@@ -96,6 +96,9 @@ Primary repo-local guide:
 Shared entry point from `DuressReleaseOps`:
 
 - [exercise-mac-client-regression-suite.ps1](/D:/Duress/DuressReleaseOps/test-env/exercise-mac-client-regression-suite.ps1)
+  - prepares local Mac policy fixtures
+  - can collect an SSH-side Mac snapshot
+  - can stage generated fixtures onto the Mac desktop before the live session
 
 ## Working rule
 
