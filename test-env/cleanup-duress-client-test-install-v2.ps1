@@ -10,9 +10,12 @@ locations used by the current Windows client test installs.
 By default this is intentionally thorough for test cleanup:
 - removes install folders
 - removes per-user and shared config roots
+- removes provisioning state and staged bundle residue under the shared config root
 - removes shortcuts
 - removes Run startup entry
 - removes common IT4GP registry roots
+- removes test override data roots from `DURESS_USER_DATA_ROOT` and
+  `DURESS_COMMON_DATA_ROOT` when those environment variables are set
 
 Use -WhatIf first if you want to preview the removal.
 
@@ -20,17 +23,17 @@ Use -WhatIf first if you want to preview the removal.
 Also removes extra installer-cache style folders under Public Documents and TEMP.
 
 .EXAMPLE
-powershell -ExecutionPolicy Bypass -File .\test-env\cleanup-duress-client-test-install.ps1
+powershell -ExecutionPolicy Bypass -File .\test-env\cleanup-duress-client-test-install-v2.ps1
 
 Removes the Duress client test install and common residual config data.
 
 .EXAMPLE
-powershell -ExecutionPolicy Bypass -File .\test-env\cleanup-duress-client-test-install.ps1 -IncludeInstallerCache
+powershell -ExecutionPolicy Bypass -File .\test-env\cleanup-duress-client-test-install-v2.ps1 -IncludeInstallerCache
 
 Performs the same cleanup and also removes extra cached installer folders.
 
 .NOTES
-Script version: 2026.04.13.1
+Script version: 2026.04.23.2
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
@@ -60,6 +63,16 @@ $registryKeys = @(
     'HKLM:\Software\IT4GP',
     'HKLM:\Software\WOW6432Node\IT4GP'
 )
+$overrideConfigRoots = @(
+    [Environment]::GetEnvironmentVariable('DURESS_USER_DATA_ROOT', 'Process'),
+    [Environment]::GetEnvironmentVariable('DURESS_USER_DATA_ROOT', 'User'),
+    [Environment]::GetEnvironmentVariable('DURESS_USER_DATA_ROOT', 'Machine'),
+    [Environment]::GetEnvironmentVariable('DURESS_COMMON_DATA_ROOT', 'Process'),
+    [Environment]::GetEnvironmentVariable('DURESS_COMMON_DATA_ROOT', 'User'),
+    [Environment]::GetEnvironmentVariable('DURESS_COMMON_DATA_ROOT', 'Machine')
+) |
+    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+    Sort-Object -Unique
 
 function Remove-PathIfPresent {
     param(
@@ -138,6 +151,10 @@ foreach ($path in $installRoots + $configRoots + $shortcutPaths) {
     Remove-PathIfPresent -LiteralPath $path
 }
 
+foreach ($overrideConfigRoot in $overrideConfigRoots) {
+    Remove-PathIfPresent -LiteralPath $overrideConfigRoot
+}
+
 if ($PSCmdlet.ShouldProcess('HKCU:\Software\Microsoft\Windows\CurrentVersion\Run\DuressAlert', 'Remove startup entry')) {
     Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'DuressAlert' -ErrorAction SilentlyContinue
 }
@@ -154,6 +171,14 @@ if ($IncludeInstallerCache) {
 
     foreach ($cacheFolder in $cacheFolders) {
         Remove-PathIfPresent -LiteralPath $cacheFolder
+    }
+}
+
+foreach ($target in 'Process', 'User', 'Machine') {
+    foreach ($variableName in 'DURESS_USER_DATA_ROOT', 'DURESS_COMMON_DATA_ROOT') {
+        if ($PSCmdlet.ShouldProcess(($variableName + ' (' + $target + ')'), 'Clear environment variable')) {
+            [Environment]::SetEnvironmentVariable($variableName, $null, $target)
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 # Plain English End-to-End Test Guide
 
-Last updated: `2026-04-19`
+Last updated: `2026-04-23`
 
 This guide is written for staff and testers who need to validate the Duress product without reading code first.
 
@@ -1301,13 +1301,36 @@ Steps:
 
 1. configure policy in the server `Client Policy` tab
 2. export provisioning bundle
-3. install the client using the helper
-4. connect the client
-5. confirm policy request/apply succeeds
+3. place `DuressClientProvisioningBundle.zip` beside the MSI and install normally
+4. or, if the client is already installed, place the same zip into `%PUBLIC%\Documents\Duress Alert\Provisioning\Pending\` and restart the client
+5. connect the client
+6. confirm policy request/apply succeeds
 
 Expected result:
 
+- the client adopts the first valid provisioning bundle if it has never previously trusted a server
 - the client is policy-managed from first connect
+- successful staged restart apply archives the bundle out of `Pending`
+
+Evidence screenshots from the latest provisioning proof run:
+
+- exported bundle zip: `D:\Duress\test-env\sandbox\policy-provisioning\20260415-152957\DuressClientProvisioningBundle.zip`
+- extracted bundle folder: `D:\Duress\test-env\sandbox\policy-provisioning\20260415-152957\bundle`
+- screenshots folder: `D:\Duress\test-env\sandbox\policy-provisioning\20260415-152957\screenshots`
+
+Server `Client Policy` tab before install:
+
+![Server Client Policy before install](../../test-env/sandbox/policy-provisioning/20260415-152957/screenshots/server-client-policy.png)
+
+Server `Client Policy` tab after install and policy-managed connect:
+
+![Server Client Policy after install](../../test-env/sandbox/policy-provisioning/20260415-152957/screenshots/server-client-policy-post-install.png)
+
+Latest automated rollout proof also covered:
+
+- real MSI install with sibling `DuressClientProvisioningBundle.zip`
+- next-start staged auto-apply from `%PUBLIC%\Documents\Duress Alert\Provisioning\Pending\`
+- archive to `Applied` after successful staged import
 
 ### Scenario 48. Policy state mismatch visibility
 

@@ -14,6 +14,12 @@ By default the server uninstall script preserves or restores prior server config
 where possible. If you want a true wipe of the current Duress server runtime
 data as well, use -PurgeServerProgramData.
 
+This combined cleanup also covers newer provisioning residue:
+- client staged and applied provisioning bundles under the shared client data root
+- client test override data roots if `DURESS_USER_DATA_ROOT` or
+  `DURESS_COMMON_DATA_ROOT` are set
+- server trusted license key residue through the server uninstall script
+
 Recommended usage:
 1. Close any open Duress client/server manager windows first.
 2. Run this script in an elevated PowerShell session if the server service is installed.
@@ -24,23 +30,23 @@ Passes -IncludeInstallerCache to the client cleanup script.
 
 .PARAMETER PurgeServerProgramData
 After uninstalling the server service, also removes the current
-`C:\ProgramData\DuressAlert` folder.
+`C:\ProgramData\DuressAlert` folder, including saved settings backups.
 
 .EXAMPLE
-powershell -ExecutionPolicy Bypass -File .\test-env\cleanup-duress-server-and-client.ps1
+powershell -ExecutionPolicy Bypass -File .\test-env\cleanup-duress-server-and-client-v2.ps1
 
 Uninstalls the test server service, cleans the test client install, and leaves
 server ProgramData in its normal preserved/restored state.
 
 .EXAMPLE
-powershell -ExecutionPolicy Bypass -File .\test-env\cleanup-duress-server-and-client.ps1 -IncludeClientInstallerCache -PurgeServerProgramData
+powershell -ExecutionPolicy Bypass -File .\test-env\cleanup-duress-server-and-client-v2.ps1 -IncludeClientInstallerCache -PurgeServerProgramData
 
 Performs the combined cleanup and also removes extra client cache folders plus
 the server ProgramData folder for a fuller wipe.
 
 .NOTES
 Run from an elevated PowerShell session when the server service may be installed.
-Script version: 2026.04.13.2
+Script version: 2026.04.23.2
 
 Supported switches:
 - `-IncludeClientInstallerCache` forwards the client cleanup script's
@@ -58,8 +64,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$clientCleanupScript = Join-Path $scriptRoot 'cleanup-duress-client-test-install.ps1'
-$serverCleanupScript = Join-Path $scriptRoot 'uninstall-real-server.ps1'
+$clientCleanupScript = Join-Path $scriptRoot 'cleanup-duress-client-test-install-v2.ps1'
+$serverCleanupScript = Join-Path $scriptRoot 'uninstall-real-server-v2.ps1'
 $serverProgramDataRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData)) 'DuressAlert'
 
 Write-Host 'Combined Duress server/client cleanup'
@@ -98,7 +104,12 @@ else {
 }
 
 Write-Host 'Running server cleanup...'
-& $serverCleanupScript
+if ($WhatIfPreference) {
+    & $serverCleanupScript -WhatIf
+}
+else {
+    & $serverCleanupScript
+}
 
 if ($PurgeServerProgramData -and (Test-Path $serverProgramDataRoot)) {
     if ($PSCmdlet.ShouldProcess($serverProgramDataRoot, 'Remove server ProgramData root')) {

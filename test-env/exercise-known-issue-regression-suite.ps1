@@ -17,6 +17,14 @@ $msbuild = "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\C
 
 New-Item -ItemType Directory -Force -Path $OutputRoot, $logsRoot | Out-Null
 
+function Stop-LingeringServerRegressionProcesses {
+  $staleProcesses = Get-Process DuressServer2025.Tests, DuressServer -ErrorAction SilentlyContinue
+  if ($staleProcesses) {
+    $staleProcesses | Stop-Process -Force
+    Start-Sleep -Milliseconds 500
+  }
+}
+
 function Invoke-And-Capture {
   param(
     [Parameter(Mandatory = $true)][string]$Name,
@@ -55,6 +63,7 @@ $results.Add((Invoke-And-Capture -Name "01-cloud-markup-regressions" -Action {
 }))
 
 $results.Add((Invoke-And-Capture -Name "02-server-regression-build" -Action {
+  Stop-LingeringServerRegressionProcesses
   & $msbuild $serverTestsProject /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:BuildProjectReferences=false
   if ($LASTEXITCODE -ne 0) {
     throw "Server regression test build failed."
@@ -62,9 +71,15 @@ $results.Add((Invoke-And-Capture -Name "02-server-regression-build" -Action {
 }))
 
 $results.Add((Invoke-And-Capture -Name "03-server-claim-and-layout-regressions" -Action {
-  $output = & $serverTestsExe
-  if ($LASTEXITCODE -ne 0) {
-    throw "Server unit tests failed."
+  Stop-LingeringServerRegressionProcesses
+  try {
+    $output = & $serverTestsExe
+    if ($LASTEXITCODE -ne 0) {
+      throw "Server unit tests failed."
+    }
+  }
+  finally {
+    Stop-LingeringServerRegressionProcesses
   }
 
   $outputText = ($output | Out-String)

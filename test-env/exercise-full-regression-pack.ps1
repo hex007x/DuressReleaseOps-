@@ -1,6 +1,7 @@
 param(
   [string]$OutputRoot = (Join-Path $PSScriptRoot ("sandbox\\full-regression\\{0}" -f (Get-Date -Format "yyyyMMdd-HHmmss"))),
-  [switch]$IncludeRealService
+  [switch]$IncludeRealService,
+  [switch]$RequireRealService
 )
 
 Set-StrictMode -Version Latest
@@ -22,6 +23,9 @@ $knownIssueRegressionScript = Join-Path $scriptRoot "exercise-known-issue-regres
 $commercialRegressionScript = Join-Path $scriptRoot "exercise-commercial-regression-suite.ps1"
 $msiUpgradeMetadataScript = Join-Path $scriptRoot "exercise-msi-upgrade-metadata-suite.ps1"
 $policySuiteScript = Join-Path $scriptRoot "exercise-client-policy-suite.ps1"
+$operatorRolloutRegressionScript = Join-Path $scriptRoot "exercise-operator-rollout-regression-suite.ps1"
+$claimedOperatorRolloutRegressionScript = Join-Path $scriptRoot "exercise-claimed-operator-rollout-regression-suite.ps1"
+$serverDeploymentUiSmokeScript = Join-Path $scriptRoot "exercise-server-deployment-ui-smoke-suite.ps1"
 $compatSuiteScript = Join-Path $scriptRoot "exercise-compatibility-suite.ps1"
 $incidentSuiteScript = Join-Path $scriptRoot "exercise-incident-suite.ps1"
 $licensingSuiteScript = Join-Path $scriptRoot "exercise-licensing-suite.ps1"
@@ -36,6 +40,10 @@ $msbuild = "C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\C
 $logsRoot = Join-Path $OutputRoot "logs"
 $shotsRoot = Join-Path $OutputRoot "screenshots"
 New-Item -ItemType Directory -Force -Path $OutputRoot, $logsRoot, $shotsRoot | Out-Null
+
+if ($RequireRealService) {
+  $IncludeRealService = $true
+}
 
 function Invoke-And-Capture {
   param(
@@ -151,6 +159,18 @@ $results.Add((Invoke-And-Capture -Name "03-policy-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $policySuiteScript
 }))
 
+$results.Add((Invoke-And-Capture -Name "03b-operator-rollout-regression-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $operatorRolloutRegressionScript
+}))
+
+$results.Add((Invoke-And-Capture -Name "03c-claimed-operator-rollout-regression-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $claimedOperatorRolloutRegressionScript
+}))
+
+$results.Add((Invoke-And-Capture -Name "03d-server-deployment-ui-smoke-suite" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $serverDeploymentUiSmokeScript
+}))
+
 $compatibilityName = "04-compatibility-suite"
 if ($IncludeRealService) {
   $results.Add((Invoke-And-Capture -Name "03b-real-service-ready-for-compat" -Action {
@@ -188,14 +208,19 @@ if ($service -and $service.Status -eq [System.ServiceProcess.ServiceControllerSt
   }))
 }
 else {
-  $skipLog = Join-Path $logsRoot "05-real-service-skipped.log"
-  "DuressAlertService was not running, so the incident, licensing, and linked-cloud real-service suites were skipped." | Set-Content -Path $skipLog
-  $results.Add([pscustomobject]@{
-    Name = "05-real-service-suites-skipped"
-    Success = $true
-    LogPath = $skipLog
-    Output = Get-Content $skipLog -Raw
-  })
+  if ($RequireRealService) {
+    throw "DuressAlertService was not running after the required real-service preparation step."
+  }
+  else {
+    $skipLog = Join-Path $logsRoot "05-real-service-skipped.log"
+    "DuressAlertService was not running, so the incident, licensing, and linked-cloud real-service suites were skipped." | Set-Content -Path $skipLog
+    $results.Add([pscustomobject]@{
+      Name = "05-real-service-suites-skipped"
+      Success = $true
+      LogPath = $skipLog
+      Output = Get-Content $skipLog -Raw
+    })
+  }
 }
 
 $results.Add((Invoke-And-Capture -Name "07-visual-demo" -Action {
@@ -239,8 +264,8 @@ else {
 $summary += ""
 $summary += "## Notes"
 $summary += ""
-$summary += "- This pack combines client unit tests, server regression tests, cloud regression, customer onboarding regressions, pricing regressions, known-issue regressions, commercial regressions, MSI upgrade metadata checks, policy/compatibility suites, linked-cloud licensing regressions, and available visual captures."
-$summary += "- Real-service incident/licensing/linked-cloud suites only run when `DuressAlertService` is already installed and running."
+$summary += "- This pack combines client unit tests, server regression tests, cloud regression, customer onboarding regressions, pricing regressions, known-issue regressions, commercial regressions, MSI upgrade metadata checks, policy suites, offline and claimed operator rollout regressions, deployment UI smoke coverage, compatibility suites, linked-cloud licensing regressions, and available visual captures."
+$summary += "- Real-service incident/licensing/linked-cloud suites only run when `DuressAlertService` is already installed and running, unless `-RequireRealService` is used to fail closed."
 $summary += "- The monitor screenshot is captured against the isolated policy-suite server-data root so it reflects policy-aware client state."
 
 Set-Content -Path $summaryPath -Value $summary -Encoding UTF8

@@ -143,7 +143,7 @@ powershell -ExecutionPolicy Bypass -File .\test-env\stop-license-portal.ps1
 Uninstall the real Windows service and restore prior local config where possible:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\test-env\uninstall-real-server.ps1
+powershell -ExecutionPolicy Bypass -File .\test-env\uninstall-real-server-v2.ps1
 ```
 
 Rebuild and restart the real Windows service after server code changes:
@@ -242,6 +242,25 @@ Run the fuller regression pack with screenshots and collected logs:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-full-regression-pack.ps1
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-full-regression-pack.ps1 -RequireRealService
+```
+
+Run the focused operator rollout regression that models the preferred server-generated rollout and the traditional Pending-bundle path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-operator-rollout-regression-suite.ps1
+```
+
+Run the claimed operator rollout regression that proves the licensed cloud claim and fetch-latest path before packaging:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-claimed-operator-rollout-regression-suite.ps1
+```
+
+Run the focused server deployment UI smoke that checks the Policy, Deployment, and Licensing surfaces stay visible and coherent:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-server-deployment-ui-smoke-suite.ps1
 ```
 
 That pack gathers:
@@ -256,6 +275,21 @@ That pack gathers:
 - commercial regressions for trial extension, payment activation, subscription lifecycle, and Xero automation
 - MSI upgrade metadata checks across current and previous cloud-hosted client/server packages
 - policy suite
+- operator rollout regression covering:
+  - server-side client pack creation
+  - hosted artifact download from the onsite server
+  - provisioned-MSI installation
+  - later policy change and managed client refresh
+  - traditional base-MSI plus Pending-bundle rollout
+- claimed operator rollout regression covering:
+  - linked-cloud claim
+  - fetch-latest client/server installer from cloud
+  - repackaging from the licensed onsite server
+  - the same client deployment and policy-refresh journey through the cloud-backed path
+- server deployment UI smoke covering:
+  - Policy, Deployment, and Licensing control presence
+  - deployment wizard metadata
+  - screenshots of the key rollout surfaces
 - compatibility suite
 - linked-cloud claim/check-in/replacement/key-rotation regressions when the real service is available
 - visual client screenshots

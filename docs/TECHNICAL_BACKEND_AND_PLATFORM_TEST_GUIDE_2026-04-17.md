@@ -1,6 +1,6 @@
 # Technical Backend And Platform Test Guide
 
-Last updated: `2026-04-19`
+Last updated: `2026-04-23`
 
 This guide is the technical companion to the plain-English end-to-end staff test guide.
 
@@ -1037,6 +1037,7 @@ Validate:
 
 - default install
 - silent install with overrides
+- sibling `DuressClientProvisioningBundle.zip` auto-apply
 - webhook configuration
 - terminal-services install mode
 - startup/tray settings
@@ -1044,6 +1045,27 @@ Validate:
 Expected result:
 
 - the installed client reflects the intended deployment configuration
+- policy-managed installs can seed trust/config without extra operator scripting when the bundle zip is beside the MSI
+
+### Scenario 33A. Pending provisioning bundle is adopted safely on next restart
+
+Purpose:
+
+- prove deferred rollout works for already-installed clients without manual config-file copying
+
+Validate:
+
+- place `DuressClientProvisioningBundle.zip` into `%PUBLIC%\Documents\Duress Alert\Provisioning\Pending\`
+- restart the client
+- confirm trust/config files are updated
+- confirm `provisioning-state.json` is written
+- confirm the bundle is archived out of `Pending`
+
+Expected result:
+
+- a never-provisioned client adopts the first valid bundle it is given
+- a previously provisioned client does not silently reapply the same bundle forever
+- success archives to `Applied` and failure archives to `Failed`
 
 ### Scenario 34. Client reconnect, identity refresh, and policy reporting remain consistent
 
@@ -1235,6 +1257,7 @@ Before calling a build technically trustworthy, the team should have at least on
 - email and link generation
 - service install/start/recovery
 - client reconnect and policy-state reporting
+- sibling-bundle MSI provisioning and staged restart-time provisioning
 - local runtime continuity during cloud outage
 
 ## Final note

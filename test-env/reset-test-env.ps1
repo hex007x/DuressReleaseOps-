@@ -32,7 +32,7 @@ if (Test-Path $serverPidFile) {
 }
 
 if (Get-Service -Name "DuressAlertService" -ErrorAction SilentlyContinue) {
-  & (Join-Path $scriptRoot "uninstall-real-server.ps1")
+  & (Join-Path $scriptRoot "uninstall-real-server-v2.ps1")
 }
 
 if (Test-Path $sandboxRoot) {
