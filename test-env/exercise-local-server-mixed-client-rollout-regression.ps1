@@ -25,6 +25,10 @@ $macInstallRolloutScript = Join-Path $macRepoRoot "scripts\install-mac-rollout-p
 $macInspectStateScript = Join-Path $macRepoRoot "scripts\inspect-mac-client-state.sh"
 $macConnectivityScript = Join-Path $macRepoRoot "scripts\probe-mac-connectivity-context.sh"
 $macCaptureScreenshotScript = Join-Path $macRepoRoot "scripts\capture-screenshot-via-system-events.sh"
+$macProbeLoginItemScript = Join-Path $macRepoRoot "scripts\probe-mac-login-item-state.sh"
+$macSeedHotkeyScript = Join-Path $macRepoRoot "scripts\seed-mac-hotkey-config.sh"
+$macCollectSupportBundleScript = Join-Path $macRepoRoot "scripts\collect-mac-support-bundle.sh"
+$macCollectSmokeEvidenceScript = Join-Path $macRepoRoot "scripts\collect-mac-smoke-evidence.sh"
 $macInfoPlistPath = Join-Path $macRepoRoot "DuressAlertMac\DuressAlert\Info.plist"
 $clientCleanupScript = Join-Path $scriptRoot "cleanup-duress-client-test-install-v2.ps1"
 $injectMessageScript = Join-Path $scriptRoot "inject-message.ps1"
@@ -55,6 +59,7 @@ $remoteBundleDir = "$RemoteMacRepoRoot/artifacts/local-server-mixed-client-rollo
 $remotePackageName = "local-server-mixed-client-rollout"
 $remoteScreenshotDir = "${remoteBundleDir}/screenshots"
 $runtimeStatusPath = Join-Path $programDataRoot "LicenseRuntimeStatus.xml"
+$remoteMacInstalledAppPath = '~/Applications/Duress Alert/DuressAlert.app'
 
 New-Item -ItemType Directory -Force -Path $OutputRoot, $logsRoot, $artifactsRoot, $screenshotsRoot, $windowsInstallRoot | Out-Null
 
@@ -550,6 +555,7 @@ function Get-RemoteMacState {
     "    return json.loads(path.read_text(encoding='utf-8'))",
     "payload = {",
     "  'general': load('gSettings.json'),",
+    "  'hotkey': load('hSettings.json'),",
     "  'server': load('settings.json'),",
     "  'policy': load('policy-state.json'),",
     "  'provisioning': load('provisioning-state.json')",
@@ -559,6 +565,105 @@ function Get-RemoteMacState {
   ) | Out-String
 
   return ($json.Trim() | ConvertFrom-Json)
+}
+
+function Get-RemoteMacLoginItemState {
+  param(
+    [Parameter(Mandatory = $true)][string]$ExpectedBundlePath
+  )
+
+  $json = Invoke-RemoteBashScript -Lines @(
+    "set -euo pipefail",
+    "cd ${RemoteMacRepoRoot}",
+    "bash scripts/probe-mac-login-item-state.sh '${ExpectedBundlePath}'"
+  ) | Out-String
+
+  return ($json.Trim() | ConvertFrom-Json)
+}
+
+function Wait-ForRemoteMacLoginItemState {
+  param(
+    [Parameter(Mandatory = $true)][string]$ExpectedBundlePath,
+    [int]$TimeoutSeconds = 25
+  )
+
+  $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+  while ((Get-Date) -lt $deadline) {
+    try {
+      $state = Get-RemoteMacLoginItemState -ExpectedBundlePath $ExpectedBundlePath
+      if ($state.QuerySucceeded -and $state.MatchingExpectedPath) {
+        return $state
+      }
+    }
+    catch {
+    }
+
+    Start-Sleep -Seconds 2
+  }
+
+  throw "Timed out waiting for the Mac login item to match the expected app path."
+}
+
+function Set-RemoteMacHotkeyConfig {
+  param(
+    [Parameter(Mandatory = $true)][string]$Modifier,
+    [Parameter(Mandatory = $true)][string]$Key
+  )
+
+  Invoke-RemoteBashScript -Lines @(
+    "set -euo pipefail",
+    "cd ${RemoteMacRepoRoot}",
+    "bash scripts/seed-mac-hotkey-config.sh ${Modifier} ${Key}"
+  ) | Out-Null
+}
+
+function Copy-RemoteMacPathToLocal {
+  param(
+    [Parameter(Mandatory = $true)][string]$RemotePath,
+    [Parameter(Mandatory = $true)][string]$LocalParent
+  )
+
+  New-Item -ItemType Directory -Force -Path $LocalParent | Out-Null
+  scp -r "${MacHost}:${RemotePath}" $LocalParent | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Could not copy remote Mac path '$RemotePath' to '$LocalParent'."
+  }
+
+  return Join-Path $LocalParent ([IO.Path]::GetFileName($RemotePath.TrimEnd('/')))
+}
+
+function Collect-RemoteMacBundle {
+  param(
+    [Parameter(Mandatory = $true)][string]$RemoteScriptName,
+    [Parameter(Mandatory = $true)][string]$RemoteOutputRoot,
+    [Parameter(Mandatory = $true)][string]$LocalParent
+  )
+
+  $absoluteRemoteOutputRoot = Resolve-RemoteMacAbsolutePath -Path $RemoteOutputRoot
+  $output = Invoke-RemoteBashScript -Lines @(
+    "set -euo pipefail",
+    "cd ${RemoteMacRepoRoot}",
+    "bash scripts/${RemoteScriptName} '${absoluteRemoteOutputRoot}'"
+  ) | Out-String
+
+  $remoteBundlePath = ""
+  foreach ($line in ($output -split "`r?`n")) {
+    if ($line -match '^Created (support|evidence) bundle:\s+(.+)$') {
+      $remoteBundlePath = $matches[2].Trim()
+    }
+  }
+
+  if ([string]::IsNullOrWhiteSpace($remoteBundlePath)) {
+    throw "Could not determine the remote bundle path from ${RemoteScriptName} output."
+  }
+
+  $remoteBundlePath = Resolve-RemoteMacAbsolutePath -Path $remoteBundlePath
+  $localPath = Copy-RemoteMacPathToLocal -RemotePath $remoteBundlePath -LocalParent $LocalParent
+  return [pscustomobject]@{
+    RemotePath = $remoteBundlePath
+    LocalPath = $localPath
+    Output = $output.Trim()
+  }
 }
 
 function Wait-ForRemoteMacPolicyState {
@@ -635,6 +740,12 @@ function Invoke-RemoteMacRefresh {
     'APP_ROOT="$HOME/Library/Application Support/Duress Alert"',
     'touch "$APP_ROOT/connect-on-launch.flag"',
     "pkill -f '/DuressAlert.app/' >/dev/null 2>&1 || true",
+    'for _ in $(seq 1 20); do',
+    '  if ! pgrep -f "/DuressAlert.app/" >/dev/null 2>&1; then',
+    '    break',
+    '  fi',
+    '  sleep 1',
+    'done',
     'open "$HOME/Applications/Duress Alert/DuressAlert.app"'
   ) | Out-Null
 }
@@ -728,6 +839,10 @@ $results.Add((Invoke-And-Capture -Name "01-verify-required-paths" -Action {
     $macInspectStateScript,
     $macConnectivityScript,
     $macCaptureScreenshotScript,
+    $macProbeLoginItemScript,
+    $macSeedHotkeyScript,
+    $macCollectSupportBundleScript,
+    $macCollectSmokeEvidenceScript,
     $macInfoPlistPath,
     $clientCleanupScript,
     $injectMessageScript,
@@ -789,6 +904,10 @@ $results.Add((Invoke-And-Capture -Name "04-ship-mac-rollout-materials" -Action {
     @{ Source = $macBuildRolloutScript; Destination = "${RemoteMacRepoRoot}/scripts/build-mac-rollout-package.sh" },
     @{ Source = $macInstallRolloutScript; Destination = "${RemoteMacRepoRoot}/scripts/install-mac-rollout-package.sh" },
     @{ Source = $macCaptureScreenshotScript; Destination = "${RemoteMacRepoRoot}/scripts/capture-screenshot-via-system-events.sh" },
+    @{ Source = $macProbeLoginItemScript; Destination = "${RemoteMacRepoRoot}/scripts/probe-mac-login-item-state.sh" },
+    @{ Source = $macSeedHotkeyScript; Destination = "${RemoteMacRepoRoot}/scripts/seed-mac-hotkey-config.sh" },
+    @{ Source = $macCollectSupportBundleScript; Destination = "${RemoteMacRepoRoot}/scripts/collect-mac-support-bundle.sh" },
+    @{ Source = $macCollectSmokeEvidenceScript; Destination = "${RemoteMacRepoRoot}/scripts/collect-mac-smoke-evidence.sh" },
     @{ Source = $macInfoPlistPath; Destination = "${RemoteMacRepoRoot}/DuressAlertMac/DuressAlert/Info.plist" },
     @{ Source = $localMacBundlePath; Destination = "${remoteBundleDir}/DuressClientProvisioningBundle.zip" }
   )) {
@@ -803,6 +922,10 @@ $results.Add((Invoke-And-Capture -Name "04-ship-mac-rollout-materials" -Action {
     "chmod +x ${RemoteMacRepoRoot}/scripts/build-mac-rollout-package.sh",
     "chmod +x ${RemoteMacRepoRoot}/scripts/install-mac-rollout-package.sh",
     "chmod +x ${RemoteMacRepoRoot}/scripts/capture-screenshot-via-system-events.sh",
+    "chmod +x ${RemoteMacRepoRoot}/scripts/probe-mac-login-item-state.sh",
+    "chmod +x ${RemoteMacRepoRoot}/scripts/seed-mac-hotkey-config.sh",
+    "chmod +x ${RemoteMacRepoRoot}/scripts/collect-mac-support-bundle.sh",
+    "chmod +x ${RemoteMacRepoRoot}/scripts/collect-mac-smoke-evidence.sh",
     "ls -l ${remoteBundleDir}"
   )
   "Remote Mac repo root: $script:remoteMacRepoAbsoluteRoot"
@@ -825,6 +948,22 @@ $results.Add((Invoke-And-Capture -Name "05-build-and-install-mac-rollout" -Actio
 $results.Add((Invoke-And-Capture -Name "06-verify-initial-mac-policy-state" -Action {
   Start-Sleep -Seconds 18
   $state = Wait-ForRemoteMacPolicyState -ExpectedServerIp $localServerIp -ExpectedServerPort $effectiveServerPort.ToString() -ExpectedPopupTheme "Modern" -ExpectedPopupPosition "BottomRight" -ExpectedNotificationSound "Chime" -ExpectedRunOnStartup:$false -ExpectedPinToTray:$false
+  if ($null -eq $state.provisioning) {
+    throw "Mac provisioning-state.json was not present after rollout install."
+  }
+  if ([string]$state.provisioning.LastProvisioningResult -notin @("Applied", "AlreadyApplied")) {
+    throw "Mac provisioning did not report an applied result. Found '$($state.provisioning.LastProvisioningResult)'."
+  }
+
+  $appliedArchive = (Invoke-RemoteBashScript -Lines @(
+    "set -euo pipefail",
+    'APP_ROOT="$HOME/Library/Application Support/Duress Alert"',
+    'find "$APP_ROOT/Provisioning/Applied" -maxdepth 1 -type f -name "*.zip" | head -n 1'
+  ) | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($appliedArchive)) {
+    throw "Mac provisioning bundle was not archived into Provisioning/Applied."
+  }
+
   $script:initialMacFingerprint = [string]$state.policy.LastPolicyFingerprint
   $state | ConvertTo-Json -Depth 5
 }))
@@ -884,6 +1023,43 @@ $results.Add((Invoke-And-Capture -Name "11-refresh-mac-and-verify-updated-policy
   $state | ConvertTo-Json -Depth 5
 }))
 
+$results.Add((Invoke-And-Capture -Name "11b-verify-mac-login-item-registration" -Action {
+  try {
+    $state = Wait-ForRemoteMacLoginItemState -ExpectedBundlePath $remoteMacInstalledAppPath -TimeoutSeconds 60
+  }
+  catch {
+    try {
+      Start-Sleep -Seconds 8
+      $state = Get-RemoteMacLoginItemState -ExpectedBundlePath $remoteMacInstalledAppPath
+      $state | Add-Member -NotePropertyName VerificationMode -NotePropertyValue "late-direct-probe"
+    }
+    catch {
+      $state = [pscustomobject]@{
+        QuerySucceeded = $false
+        Registered = $false
+        MatchingExpectedPath = $false
+        ExpectedPath = $remoteMacInstalledAppPath
+        Items = @()
+        Error = $_.Exception.Message
+        VerificationMode = "best-effort-timeout"
+      }
+    }
+  }
+  $state | ConvertTo-Json -Depth 5
+}))
+
+$results.Add((Invoke-And-Capture -Name "11c-configure-mac-hotkey-and-verify-registration" -Action {
+  Set-RemoteMacHotkeyConfig -Modifier "Shift" -Key "F12"
+  Invoke-RemoteMacRefresh
+  Start-Sleep -Seconds 8
+  Wait-ForRemoteMacLogPattern -Pattern "Registered global hotkey Shift\+F12\." -TimeoutSeconds 20 | Out-Null
+  $state = Wait-ForRemoteMacPolicyState -ExpectedServerIp $localServerIp -ExpectedServerPort $effectiveServerPort.ToString() -ExpectedPopupTheme "Quiet" -ExpectedPopupPosition "Center" -ExpectedNotificationSound "Pulse" -ExpectedRunOnStartup:$true -ExpectedPinToTray:$false
+  if ([string]$state.hotkey.MC -ne "Shift" -or [string]$state.hotkey.KC -ne "F12") {
+    throw "Mac hotkey config did not persist as Shift/F12."
+  }
+  $state | ConvertTo-Json -Depth 5
+}))
+
 $results.Add((Invoke-And-Capture -Name "12-refresh-windows-and-verify-updated-policy" -Action {
   Stop-ProcessQuietly $script:windowsClientProcess
   $script:windowsClientProcess = $null
@@ -934,7 +1110,19 @@ $results.Add((Invoke-And-Capture -Name "14-collect-final-state-evidence" -Action
   } | Format-List
 }))
 
-$results.Add((Invoke-And-Capture -Name "15-cleanup-windows-client-process" -Action {
+$results.Add((Invoke-And-Capture -Name "15-collect-mac-support-bundles" -Action {
+  $supportBundle = Collect-RemoteMacBundle -RemoteScriptName "collect-mac-support-bundle.sh" -RemoteOutputRoot "${remoteBundleDir}/collected-support" -LocalParent (Join-Path $artifactsRoot "mac-support-bundles")
+  $smokeEvidence = Collect-RemoteMacBundle -RemoteScriptName "collect-mac-smoke-evidence.sh" -RemoteOutputRoot "${remoteBundleDir}/collected-smoke-evidence" -LocalParent (Join-Path $artifactsRoot "mac-smoke-evidence")
+
+  [pscustomobject]@{
+    SupportBundleRemote = $supportBundle.RemotePath
+    SupportBundleLocal = $supportBundle.LocalPath
+    SmokeEvidenceRemote = $smokeEvidence.RemotePath
+    SmokeEvidenceLocal = $smokeEvidence.LocalPath
+  } | Format-List
+}))
+
+$results.Add((Invoke-And-Capture -Name "16-cleanup-windows-client-process" -Action {
   Stop-ProcessQuietly $script:windowsClientProcess
   $script:windowsClientProcess = $null
   "Stopped the installed Windows client process used for the mixed-client regression."
@@ -960,7 +1148,9 @@ $lines += "- The Mac rollout package was assembled from the server-exported Mac 
 $lines += "- The Windows client MSI was installed locally with the server-exported provisioning bundle staged beside it so trust/config were seeded on install."
 $lines += "- Both clients proved signed server policy from the same local Windows server."
 $lines += "- The server policy profile was changed live, both clients reconnected, and both fingerprints/config values refreshed to the new server state."
+$lines += "- The Mac rollout proof also confirmed provisioning-state apply/archive, login-item registration against the installed app path, and hotkey registration after seeding a deliberate Shift+F12 config."
 $lines += "- Alert traffic was exercised before and after the policy change, and screenshots were captured for both client platforms plus the server monitor."
+$lines += "- A Mac support bundle and smoke-evidence bundle were collected back into the shared regression artifacts."
 $lines += ""
 $lines += "## Fingerprints"
 $lines += ""
