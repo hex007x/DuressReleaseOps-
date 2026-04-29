@@ -1,6 +1,6 @@
 # Repo Testing And Documentation Map
 
-Last updated: `2026-04-28`
+Last updated: `2026-04-29`
 
 ## Purpose
 
@@ -99,6 +99,11 @@ Shared entry point from `DuressReleaseOps`:
   - prepares local Mac policy fixtures
   - can collect an SSH-side Mac snapshot
   - can stage generated fixtures onto the Mac desktop before the live session
+- [exercise-local-server-mac-rollout-regression.ps1](/D:/Duress/DuressReleaseOps/test-env/exercise-local-server-mac-rollout-regression.ps1)
+  - exports a fresh provisioning bundle from the local Windows server install
+  - packages the current Mac app with provisioning
+  - copies and installs the rollout pack onto the real Mac over SSH/SCP
+  - verifies both Mac-side policy state and Windows server runtime policy status
 
 ## Working rule
 

@@ -238,8 +238,8 @@ Negative proof today:
 Main gaps:
 
 - no real automated unit/integration/regression project yet
-- no shared regression harness slice dedicated to Mac runtime behavior
-- still dependent on real Apple-hardware/manual smoke for meaningful proof
+- Mac proof still depends on real Apple hardware and SSH reachability for meaningful runtime validation
+- deeper Mac behavioral coverage is still narrower than the Windows client/server/cloud suites
 
 ## Positive-proof review
 
