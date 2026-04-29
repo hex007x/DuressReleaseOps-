@@ -63,6 +63,7 @@ The migrated harness includes the broader regression additions:
 - `test-env/exercise-e2e-proof-pack.ps1`
 - `test-env/exercise-linked-cloud-regression-suite.ps1`
 - `test-env/exercise-local-server-mac-rollout-regression.ps1`
+- `test-env/exercise-local-server-mixed-client-rollout-regression.ps1`
 
 Current Mac end-to-end proof path:
 
@@ -71,10 +72,18 @@ Current Mac end-to-end proof path:
 - copy the rollout pack to the real Mac over SSH/SCP
 - install, launch, and verify `policy-state.json` and server runtime status go green
 
+Current mixed-client rollout proof path:
+
+- export separate provisioning bundles for the Windows and Mac clients from the same local Windows server install
+- assemble and install the Mac rollout package on the real Mac over SSH/SCP
+- install the Windows client MSI locally against that same server
+- change the server policy profile live, verify both clients refresh to new signed fingerprints, and capture screenshots before and after the alert flow
+
 To include that live Mac slice from the full shared pack, run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-full-regression-pack.ps1 -IncludeMacRollout
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-full-regression-pack.ps1 -IncludeMixedClientRollout
 ```
 
 ## Tracking

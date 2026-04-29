@@ -238,7 +238,7 @@ Negative proof today:
 Main gaps:
 
 - no real automated unit/integration/regression project yet
-- Mac proof still depends on real Apple hardware and SSH reachability for meaningful runtime validation
+- Mac proof now includes local-server Mac-only and mixed Windows-plus-Mac rollout regressions, but it still depends on real Apple hardware and SSH reachability for meaningful runtime validation
 - deeper Mac behavioral coverage is still narrower than the Windows client/server/cloud suites
 
 ## Positive-proof review

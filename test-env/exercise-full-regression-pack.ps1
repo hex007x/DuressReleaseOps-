@@ -2,6 +2,7 @@ param(
   [string]$OutputRoot = (Join-Path $PSScriptRoot ("sandbox\\full-regression\\{0}" -f (Get-Date -Format "yyyyMMdd-HHmmss"))),
   [switch]$IncludeRealService,
   [switch]$IncludeMacRollout,
+  [switch]$IncludeMixedClientRollout,
   [switch]$RequireRealService
 )
 
@@ -32,6 +33,7 @@ $incidentSuiteScript = Join-Path $scriptRoot "exercise-incident-suite.ps1"
 $licensingSuiteScript = Join-Path $scriptRoot "exercise-licensing-suite.ps1"
 $linkedCloudSuiteScript = Join-Path $scriptRoot "exercise-linked-cloud-regression-suite.ps1"
 $localServerMacRolloutScript = Join-Path $scriptRoot "exercise-local-server-mac-rollout-regression.ps1"
+$localServerMixedClientRolloutScript = Join-Path $scriptRoot "exercise-local-server-mixed-client-rollout-regression.ps1"
 $visualDemoScript = Join-Path $scriptRoot "run-visual-demo.ps1"
 $monitorShotScript = Join-Path $scriptRoot "capture-monitor-screenshot.ps1"
 $stopFakeServerScript = Join-Path $scriptRoot "stop-server.ps1"
@@ -179,6 +181,12 @@ if ($IncludeMacRollout) {
   }))
 }
 
+if ($IncludeMixedClientRollout) {
+  $results.Add((Invoke-And-Capture -Name "03f-local-server-mixed-client-rollout-regression" -Action {
+    powershell -NoProfile -ExecutionPolicy Bypass -File $localServerMixedClientRolloutScript
+  }))
+}
+
 $compatibilityName = "04-compatibility-suite"
 if ($IncludeRealService) {
   $results.Add((Invoke-And-Capture -Name "03b-real-service-ready-for-compat" -Action {
@@ -275,6 +283,7 @@ $summary += ""
 $summary += "- This pack combines client unit tests, server regression tests, cloud regression, customer onboarding regressions, pricing regressions, known-issue regressions, commercial regressions, MSI upgrade metadata checks, policy suites, offline and claimed operator rollout regressions, deployment UI smoke coverage, compatibility suites, linked-cloud licensing regressions, and available visual captures."
 $summary += "- Real-service incident/licensing/linked-cloud suites only run when `DuressAlertService` is already installed and running, unless `-RequireRealService` is used to fail closed."
 $summary += "- Mac rollout proof is opt-in via `-IncludeMacRollout` so the standard Windows-only pack does not require Apple hardware or SSH reachability."
+$summary += "- Mixed Windows-plus-Mac rollout proof is opt-in via `-IncludeMixedClientRollout` because it performs live policy mutation, cross-client alert checks, and screenshot capture against the real Mac and local Windows client."
 $summary += "- The monitor screenshot is captured against the isolated policy-suite server-data root so it reflects policy-aware client state."
 
 Set-Content -Path $summaryPath -Value $summary -Encoding UTF8

@@ -104,6 +104,10 @@ Shared entry point from `DuressReleaseOps`:
   - packages the current Mac app with provisioning
   - copies and installs the rollout pack onto the real Mac over SSH/SCP
   - verifies both Mac-side policy state and Windows server runtime policy status
+- [exercise-local-server-mixed-client-rollout-regression.ps1](/D:/Duress/DuressReleaseOps/test-env/exercise-local-server-mixed-client-rollout-regression.ps1)
+  - exports separate Mac and Windows provisioning bundles from the same local Windows server install
+  - installs the Mac rollout pack on the real Mac and the Windows MSI locally
+  - mutates server policy live, re-verifies both clients against new signed fingerprints, and captures screenshot evidence on both platforms plus the server monitor
 
 ## Working rule
 
