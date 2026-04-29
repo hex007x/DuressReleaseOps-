@@ -212,6 +212,12 @@ Exercise the real server protocol directly without UI automation:
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-real-server-protocol.ps1
 ```
 
+Exercise a local Windows server to Mac rollout end-to-end, including provisioning bundle export, Mac packaging, remote install, and policy proof:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-local-server-mac-rollout-regression.ps1
+```
+
 Run the full incident workflow suite against the real server:
 
 ```powershell
