@@ -111,6 +111,7 @@ Shared entry point from `DuressReleaseOps`:
 - [exercise-local-server-mixed-client-rollout-regression.ps1](/D:/Duress/DuressReleaseOps/test-env/exercise-local-server-mixed-client-rollout-regression.ps1)
   - exports separate Mac and Windows provisioning bundles from the same local Windows server install
   - installs the Mac rollout pack on the real Mac and the Windows MSI locally
+  - stages the built Mac rollout zip back into the server-hosted artifact library so one server artifact surface can serve Windows workstation, Windows terminal, and Mac rollout packages
   - mutates server policy live, re-verifies both clients against new signed fingerprints, and captures screenshot evidence on both platforms plus the server monitor
 
 ## Working rule

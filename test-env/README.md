@@ -218,7 +218,7 @@ Exercise a local Windows server to Mac rollout end-to-end, including provisionin
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-local-server-mac-rollout-regression.ps1
 ```
 
-Exercise the richer local Windows server mixed-client rollout proof, including Mac packaging, Windows MSI install, live policy mutation, and screenshot-backed alert verification on both clients:
+Exercise the richer local Windows server mixed-client rollout proof, including Mac packaging, staging the resulting Mac rollout zip back into the server-hosted artifact library, Windows MSI install, live policy mutation, and screenshot-backed alert verification on both clients:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-local-server-mixed-client-rollout-regression.ps1

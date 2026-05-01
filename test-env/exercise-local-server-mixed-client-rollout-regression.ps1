@@ -19,6 +19,7 @@ $installRealServerScript = Join-Path $scriptRoot "install-real-server.ps1"
 $stopRealServerScript = Join-Path $scriptRoot "stop-real-server.ps1"
 $serverBuildExe = Join-Path $scriptRoot "server-build\DuressServer.exe"
 $serverPolicyScript = Join-Path $workspaceRoot "_external\DuressServer2025\scripts\set-server-client-policy.ps1"
+$serverStageMacPackageScript = Join-Path $workspaceRoot "_external\DuressServer2025\scripts\stage-mac-rollout-package.ps1"
 $macRepoRoot = Join-Path $workspaceRoot "_external\duress-mac"
 $macBuildRolloutScript = Join-Path $macRepoRoot "scripts\build-mac-rollout-package.sh"
 $macInstallRolloutScript = Join-Path $macRepoRoot "scripts\install-mac-rollout-package.sh"
@@ -734,6 +735,25 @@ function Wait-ForRemoteMacLogPattern {
   throw "Timed out waiting for Mac log pattern '$Pattern'."
 }
 
+function Wait-ForHttpContent {
+  param(
+    [Parameter(Mandatory = $true)][string]$Uri,
+    [int]$TimeoutSeconds = 25
+  )
+
+  $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+  do {
+    try {
+      return (Invoke-WebRequest -UseBasicParsing -Uri $Uri -TimeoutSec 10).Content
+    }
+    catch {
+      Start-Sleep -Seconds 2
+    }
+  } while ((Get-Date) -lt $deadline)
+
+  throw "Timed out waiting for HTTP content from $Uri"
+}
+
 function Invoke-RemoteMacRefresh {
   Invoke-RemoteBashScript -Lines @(
     'set -euo pipefail',
@@ -818,6 +838,7 @@ $updatedMacFingerprint = ""
 $initialWindowsFingerprint = ""
 $updatedWindowsFingerprint = ""
 $remoteMacRepoAbsoluteRoot = ""
+$stagedMacHostedPackagePath = ""
 
 $results.Add((Invoke-And-Capture -Name "01-verify-required-paths" -Action {
   $clientMsi = Get-ChildItem -Path $clientMsiRoot -Filter "*.msi" -File -ErrorAction Stop |
@@ -943,6 +964,55 @@ $results.Add((Invoke-And-Capture -Name "05-build-and-install-mac-rollout" -Actio
     "cd ${remoteBundleDir}/${remotePackageName}",
     "bash ./Install-DuressAlertMacWithProvisioning.sh --fresh-state --connect-on-launch"
   )
+}))
+
+$results.Add((Invoke-And-Capture -Name "05b-stage-mac-rollout-into-server-artifacts" -Action {
+  $remoteMacPackageZip = "${remoteBundleDir}/${remotePackageName}.zip"
+  $localMacPackageZip = Copy-RemoteMacPathToLocal -RemotePath $remoteMacPackageZip -LocalParent $artifactsRoot
+
+  & powershell -NoProfile -ExecutionPolicy Bypass -File $serverStageMacPackageScript -PackagePath $localMacPackageZip -ServerDataRoot $programDataRoot | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Could not stage the built Mac rollout package into the server artifact library."
+  }
+
+  $script:stagedMacHostedPackagePath = Get-ChildItem -LiteralPath (Join-Path $programDataRoot "ProvisioningArtifacts\ClientPackages") -Filter "DuressAlertMac.Rollout*.zip" |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1 -ExpandProperty FullName
+  if ([string]::IsNullOrWhiteSpace($script:stagedMacHostedPackagePath)) {
+    throw "No staged Mac rollout package was found in the server client-package artifact directory."
+  }
+
+  $artifactLibraryUrl = "http://${localServerIp}:$($effectiveServerPort + 1)/artifacts/"
+  $artifactHtml = Wait-ForHttpContent -Uri $artifactLibraryUrl -TimeoutSeconds 25
+  $stagedFileName = [IO.Path]::GetFileName($script:stagedMacHostedPackagePath)
+  if ($artifactHtml -notmatch [regex]::Escape($stagedFileName)) {
+    throw "Hosted artifact library did not list the staged Mac rollout package '$stagedFileName'."
+  }
+
+  $downloadUrl = "http://${localServerIp}:$($effectiveServerPort + 1)/artifacts/download/$([uri]::EscapeDataString($stagedFileName))"
+  $downloadedHostedMacPackage = Join-Path $artifactsRoot $stagedFileName
+  $downloadDeadline = (Get-Date).AddSeconds(25)
+  do {
+    try {
+      Invoke-WebRequest -UseBasicParsing -Uri $downloadUrl -OutFile $downloadedHostedMacPackage -TimeoutSec 10 | Out-Null
+      break
+    }
+    catch {
+      if ((Get-Date) -ge $downloadDeadline) {
+        throw
+      }
+      Start-Sleep -Seconds 2
+    }
+  } while ($true)
+  if (-not (Test-Path $downloadedHostedMacPackage) -or (Get-Item $downloadedHostedMacPackage).Length -le 0) {
+    throw "Hosted Mac rollout package download did not produce a valid local file."
+  }
+
+  [pscustomobject]@{
+    HostedArtifactUrl = $artifactLibraryUrl
+    StagedPackage = $script:stagedMacHostedPackagePath
+    DownloadedCopy = $downloadedHostedMacPackage
+  } | ConvertTo-Json -Depth 4
 }))
 
 $results.Add((Invoke-And-Capture -Name "06-verify-initial-mac-policy-state" -Action {
@@ -1145,6 +1215,7 @@ $lines += ""
 $lines += ('- Local Windows server service listened on `{0}:{1}`.' -f $localServerIp, $effectiveServerPort)
 $lines += "- The server exported separate provisioning bundles for the Mac and Windows clients."
 $lines += "- The Mac rollout package was assembled from the server-exported Mac provisioning bundle, copied over SSH/SCP, installed on the real Mac, and connected successfully."
+$lines += "- That Mac rollout package was staged back into the server-hosted artifact library so the same server artifact surface now serves Windows workstation, Windows terminal, and Mac rollout packages."
 $lines += "- The Windows client MSI was installed locally with the server-exported provisioning bundle staged beside it so trust/config were seeded on install."
 $lines += "- Both clients proved signed server policy from the same local Windows server."
 $lines += "- The server policy profile was changed live, both clients reconnected, and both fingerprints/config values refreshed to the new server state."
@@ -1169,6 +1240,7 @@ $lines += "## Artifacts"
 $lines += ""
 $lines += "- [Mac provisioning bundle]($($localMacBundlePath -replace '\\','/'))"
 $lines += "- [Windows provisioning bundle]($($localWindowsBundlePath -replace '\\','/'))"
+$lines += "- [Hosted Mac rollout package]($($stagedMacHostedPackagePath -replace '\\','/'))"
 $lines += ('- Remote Mac rollout root: `{0}/{1}`' -f $remoteBundleDir, $remotePackageName)
 
 Set-Content -Path $summaryPath -Value $lines -Encoding UTF8
