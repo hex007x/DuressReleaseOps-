@@ -152,12 +152,43 @@ finally {
 "@
 
   Set-Content -Path $inspectionScriptPath -Value $scriptText -Encoding UTF8
-  $validationOutput = & powershell -NoProfile -STA -ExecutionPolicy Bypass -File $inspectionScriptPath 2>&1
-  if ($LASTEXITCODE -ne 0) {
-    throw ("Server UI inspection failed.`r`n" + ($validationOutput | Out-String))
-  }
 
-  return ($validationOutput | Out-String).Trim()
+  $stdoutPath = Join-Path $OutputRoot "ui-inspection.stdout.log"
+  $stderrPath = Join-Path $OutputRoot "ui-inspection.stderr.log"
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = "powershell.exe"
+  $psi.Arguments = "-NoProfile -STA -ExecutionPolicy Bypass -File `"$inspectionScriptPath`""
+  $psi.UseShellExecute = $false
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+
+  $process = [System.Diagnostics.Process]::Start($psi)
+  try {
+    if (-not $process.WaitForExit(60000)) {
+      try { $process.Kill() } catch {}
+      throw "Server UI inspection timed out after 60 seconds."
+    }
+
+    $stdout = $process.StandardOutput.ReadToEnd()
+    $stderr = $process.StandardError.ReadToEnd()
+    Set-Content -Path $stdoutPath -Value $stdout -Encoding UTF8
+    Set-Content -Path $stderrPath -Value $stderr -Encoding UTF8
+
+    if ($process.ExitCode -ne 0) {
+      throw ("Server UI inspection failed.`r`n" + $stdout + $stderr)
+    }
+
+    return ($stdout.Trim())
+  }
+  finally {
+    try {
+      if (-not $process.HasExited) {
+        $process.Kill()
+      }
+    }
+    catch {}
+    $process.Dispose()
+  }
 }
 
 $results = New-Object System.Collections.Generic.List[object]

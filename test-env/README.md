@@ -224,6 +224,12 @@ Exercise the richer local Windows server mixed-client rollout proof, including M
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-local-server-mixed-client-rollout-regression.ps1
 ```
 
+Verify that the currently published Cloud installer rows and on-disk artifacts match the intended released client/server versions:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-env\verify-published-cloud-installers.ps1 -ClientVersion 3.4.0-alpha.2 -ServerVersion 3.4.0-alpha.2
+```
+
 Run the full incident workflow suite against the real server:
 
 ```powershell

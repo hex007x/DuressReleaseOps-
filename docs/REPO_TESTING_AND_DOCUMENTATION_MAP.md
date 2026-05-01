@@ -113,6 +113,10 @@ Shared entry point from `DuressReleaseOps`:
   - installs the Mac rollout pack on the real Mac and the Windows MSI locally
   - stages the built Mac rollout zip back into the server-hosted artifact library so one server artifact surface can serve Windows workstation, Windows terminal, and Mac rollout packages
   - mutates server policy live, re-verifies both clients against new signed fingerprints, and captures screenshot evidence on both platforms plus the server monitor
+- [verify-published-cloud-installers.ps1](/D:/Duress/DuressReleaseOps/test-env/verify-published-cloud-installers.ps1)
+  - checks the currently published Cloud installer rows for the requested client/server versions
+  - verifies the published on-disk installer artifacts exist and match the stored SHA-256 values
+  - gives a lightweight post-release sanity check after publish
 
 ## Working rule
 

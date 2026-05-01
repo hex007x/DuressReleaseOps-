@@ -72,8 +72,17 @@ $shellCandidates = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
 foreach ($candidate in $shellCandidates) {
   try {
     $process = Get-Process -Id $candidate.ProcessId -ErrorAction SilentlyContinue
-    if ($process -and $process.MainWindowHandle -ne 0) {
-      Stop-VisibleProcess -Process $process
+    if ($process) {
+      if ($process.MainWindowHandle -ne 0) {
+        Stop-VisibleProcess -Process $process
+      }
+      else {
+        $label = "{0} ({1})" -f $process.ProcessName, $process.Id
+        if ($PSCmdlet.ShouldProcess($label, "Stop headless test helper shell")) {
+          Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+          $closed.Add($label) | Out-Null
+        }
+      }
     }
   }
   catch {}
