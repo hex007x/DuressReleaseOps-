@@ -13,6 +13,7 @@ $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 . (Join-Path $scriptRoot "_workspace-root.ps1")
 $workspaceRoot = Get-DuressWorkspaceRoot -ScriptRoot $scriptRoot
 $clientUnitScript = Join-Path $scriptRoot "run-client-unit-test.ps1"
+$assertSuitePortAvailabilityScript = Join-Path $scriptRoot "assert-suite-port-availability.ps1"
 $clientConfigModesScript = Join-Path $scriptRoot "verify-client-config-modes.ps1"
 $clientUninstallScript = Join-Path $scriptRoot "verify-client-uninstall-config-preservation.ps1"
 $clientRuntimeScript = Join-Path $scriptRoot "verify-windows-client-runtime.ps1"
@@ -159,6 +160,10 @@ $results.Add((Invoke-And-Capture -Name "02g-msi-upgrade-metadata-suite" -Action 
   powershell -NoProfile -ExecutionPolicy Bypass -File $msiUpgradeMetadataScript
 }))
 
+$results.Add((Invoke-And-Capture -Name "02h-isolated-suite-port-preflight" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $assertSuitePortAvailabilityScript -Ports @(8001, 8002)
+}))
+
 $results.Add((Invoke-And-Capture -Name "03-policy-suite" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $policySuiteScript
 }))
@@ -281,6 +286,7 @@ $summary += ""
 $summary += "## Notes"
 $summary += ""
 $summary += "- This pack combines client unit tests, server regression tests, cloud regression, customer onboarding regressions, pricing regressions, known-issue regressions, commercial regressions, MSI upgrade metadata checks, policy suites, offline and claimed operator rollout regressions, deployment UI smoke coverage, compatibility suites, linked-cloud licensing regressions, and available visual captures."
+$summary += "- The isolated-suite port preflight now fail-closes before policy and rollout harnesses start, so foreign listeners on 8001/8002 show up as a clear environment problem rather than a vague runtime timeout."
 $summary += "- Real-service incident/licensing/linked-cloud suites only run when `DuressAlertService` is already installed and running, unless `-RequireRealService` is used to fail closed."
 $summary += "- Mac rollout proof is opt-in via `-IncludeMacRollout` so the standard Windows-only pack does not require Apple hardware or SSH reachability."
 $summary += "- Mixed Windows-plus-Mac rollout proof is opt-in via `-IncludeMixedClientRollout` because it performs live policy mutation, cross-client alert checks, and screenshot capture against the real Mac and local Windows client."
