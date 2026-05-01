@@ -6,6 +6,29 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function Assert-RealServerOwnsPort {
+  param(
+    [int]$Port = 8001,
+    [string]$ExpectedProcessName = "DuressServer"
+  )
+
+  $listener = Get-NetTCPConnection -State Listen -LocalAddress 127.0.0.1 -LocalPort $Port -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+
+  if (-not $listener) {
+    throw "Expected a listener on 127.0.0.1:$Port for the real server protocol check, but nothing is listening."
+  }
+
+  $process = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
+  if (-not $process) {
+    throw "Could not resolve the process that owns 127.0.0.1:$Port."
+  }
+
+  if ($process.ProcessName -ne $ExpectedProcessName) {
+    throw "127.0.0.1:$Port is owned by '$($process.ProcessName)' (PID $($process.Id)), not '$ExpectedProcessName'. Stop the conflicting listener before running the real server protocol suite."
+  }
+}
+
 function New-DuressClient {
   param(
     [Parameter(Mandatory = $true)][string]$Name,
@@ -70,6 +93,8 @@ $service = Get-Service -Name "DuressAlertService" -ErrorAction SilentlyContinue
 if (-not $service -or $service.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running) {
   throw "DuressAlertService must be running before exercising the real server protocol."
 }
+
+Assert-RealServerOwnsPort -Port 8001 -ExpectedProcessName "DuressServer"
 
 $clientA = $null
 $clientB = $null

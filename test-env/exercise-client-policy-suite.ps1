@@ -208,6 +208,7 @@ function New-WireClient {
   $writer.NewLine = "`n"
   $writer.AutoFlush = $true
   $writer.WriteLine($RegistrationLine)
+  Start-Sleep -Milliseconds 150
 
   [pscustomobject]@{
     RegistrationLine = $RegistrationLine
