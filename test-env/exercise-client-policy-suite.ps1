@@ -90,6 +90,51 @@ function Wait-ForCondition {
   throw "Timed out waiting for: $Description"
 }
 
+function Get-ListeningPortOwner {
+  param(
+    [Parameter(Mandatory = $true)][int]$Port
+  )
+
+  $connection = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue |
+    Select-Object -First 1
+  if (-not $connection) {
+    return $null
+  }
+
+  $process = Get-Process -Id $connection.OwningProcess -ErrorAction SilentlyContinue
+  return [pscustomobject]@{
+    Port = $Port
+    ProcessId = $connection.OwningProcess
+    ProcessName = if ($process) { $process.ProcessName } else { "" }
+  }
+}
+
+function Assert-PortsAvailable {
+  param(
+    [Parameter(Mandatory = $true)][int[]]$Ports
+  )
+
+  foreach ($port in $Ports) {
+    $owner = Get-ListeningPortOwner -Port $port
+    if ($owner) {
+      throw "Required policy-suite port $port is already owned by '$($owner.ProcessName)' (PID $($owner.ProcessId))."
+    }
+  }
+}
+
+function Wait-ForPortOwnership {
+  param(
+    [Parameter(Mandatory = $true)][int]$Port,
+    [Parameter(Mandatory = $true)][int]$OwningProcessId,
+    [int]$TimeoutSeconds = 20
+  )
+
+  Wait-ForCondition -Description "port $Port owned by PID $OwningProcessId" -TimeoutSeconds $TimeoutSeconds -Condition {
+    $owner = Get-ListeningPortOwner -Port $Port
+    return $owner -and $owner.ProcessId -eq $OwningProcessId
+  }
+}
+
 function Set-ClientServerPort {
   param(
     [Parameter(Mandatory = $true)][string]$Path,
@@ -122,6 +167,8 @@ $($ScriptBlock.ToString())
 }
 
 function Start-IsolatedServerHarness {
+  Assert-PortsAvailable -Ports @(8001, 8002)
+
   $serverRootLiteral = $suiteServerRoot.Replace("'", "''")
   $serverExeLiteral = $serverExe.Replace("'", "''")
   $statusFileLiteral = $suiteHarnessStatusFile.Replace("'", "''")
@@ -148,6 +195,7 @@ while (`$true) { Start-Sleep -Seconds 2 }
     if ($null -eq $statusText) { return $false }
     return $statusText.Trim() -eq "started"
   }
+  Wait-ForPortOwnership -Port 8001 -OwningProcessId $process.Id -TimeoutSeconds 20
   return $process
 }
 
