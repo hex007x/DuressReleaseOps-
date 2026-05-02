@@ -22,6 +22,7 @@ $serverPolicyScript = Join-Path $workspaceRoot "_external\DuressServer2025\scrip
 $macRepoRoot = Join-Path $workspaceRoot "_external\duress-mac"
 $macBuildRolloutScript = Join-Path $macRepoRoot "scripts\build-mac-rollout-package.sh"
 $macInstallRolloutScript = Join-Path $macRepoRoot "scripts\install-mac-rollout-package.sh"
+$macInstallPkgScript = Join-Path $macRepoRoot "scripts\install-mac-rollout-pkg.sh"
 $macInspectStateScript = Join-Path $macRepoRoot "scripts\inspect-mac-client-state.sh"
 $macConnectivityScript = Join-Path $macRepoRoot "scripts\probe-mac-connectivity-context.sh"
 $macInfoPlistPath = Join-Path $macRepoRoot "DuressAlertMac\DuressAlert\Info.plist"
@@ -290,6 +291,12 @@ $results.Add((Invoke-And-Capture -Name "02-start-local-server-service" -Action {
 
   & powershell -NoProfile -ExecutionPolicy Bypass -File $installRealServerScript
 
+  $postInstallService = Get-Service -Name "DuressAlertService" -ErrorAction SilentlyContinue
+  if ($postInstallService -and $postInstallService.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
+    Stop-Service -Name "DuressAlertService" -Force
+    (Get-Service -Name "DuressAlertService").WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Stopped, [TimeSpan]::FromSeconds(20))
+  }
+
   $script:localServerIp = Get-LanIPv4
   $script:effectiveServerPort = Resolve-AvailableServerPort -PreferredPort $ServerPort
 
@@ -380,6 +387,11 @@ $results.Add((Invoke-And-Capture -Name "05-ship-bundle-to-mac" -Action {
     throw "Could not copy install-mac-rollout-package.sh to $MacHost."
   }
 
+  scp $macInstallPkgScript "${MacHost}:${RemoteMacRepoRoot}/scripts/install-mac-rollout-pkg.sh" | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Could not copy install-mac-rollout-pkg.sh to $MacHost."
+  }
+
   scp $macInfoPlistPath "${MacHost}:${RemoteMacRepoRoot}/DuressAlertMac/DuressAlert/Info.plist" | Out-Null
   if ($LASTEXITCODE -ne 0) {
     throw "Could not copy Info.plist to $MacHost."
@@ -394,6 +406,7 @@ $results.Add((Invoke-And-Capture -Name "05-ship-bundle-to-mac" -Action {
     "set -euo pipefail",
     "chmod +x ${RemoteMacRepoRoot}/scripts/build-mac-rollout-package.sh",
     "chmod +x ${RemoteMacRepoRoot}/scripts/install-mac-rollout-package.sh",
+    "chmod +x ${RemoteMacRepoRoot}/scripts/install-mac-rollout-pkg.sh",
     "ls -l ${remoteBundleDir}"
   )
 }))
@@ -413,8 +426,14 @@ $results.Add((Invoke-And-Capture -Name "06-build-remote-mac-rollout-pack" -Actio
 $results.Add((Invoke-And-Capture -Name "07-install-and-launch-on-mac" -Action {
   Invoke-RemoteBashScript -Lines @(
     "set -euo pipefail",
-    "cd ${remoteBundleDir}/${remotePackageName}",
-    "bash ./Install-DuressAlertMacWithProvisioning.sh --fresh-state --connect-on-launch"
+    "PKG_PATH=${remoteBundleDir}/${remotePackageName}.pkg",
+    'if [ -f "$PKG_PATH" ]; then',
+    "  cd ${remoteBundleDir}/${remotePackageName}",
+    '  bash ./Install-DuressAlertMacPkg.sh --package-path "$PKG_PATH" --fresh-state --connect-on-launch',
+    'else',
+    "  cd ${remoteBundleDir}/${remotePackageName}",
+    '  bash ./Install-DuressAlertMacWithProvisioning.sh --fresh-state --connect-on-launch',
+    'fi'
   )
 }))
 
@@ -456,8 +475,8 @@ $lines += "## Key outcomes"
 $lines += ""
 $lines += ('- Local Windows server service was configured to listen on `{0}:{1}`.' -f $localServerIp, $effectiveServerPort)
 $lines += "- A fresh local `DuressClientProvisioningBundle.zip` was exported from the current server settings."
-$lines += "- The bundle was copied to the Mac and packaged together with `DuressAlert.app` into a rollout-style Mac handoff."
-$lines += "- The Mac install helper staged the bundle into `Provisioning/Pending`, relaunched the app, and requested live server policy."
+$lines += "- The bundle was copied to the Mac and packaged together with `DuressAlert.app` into both rollout ZIP and native PKG handoff formats."
+$lines += "- The Mac install path preferred the native PKG helper when available, then relaunched the app and requested live server policy."
 $lines += "- Success requires both Mac-side policy/provisioning state and local server runtime policy status to go green."
 $lines += ""
 $lines += "## Artifacts"

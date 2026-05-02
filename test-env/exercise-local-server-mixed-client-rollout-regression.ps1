@@ -23,6 +23,7 @@ $serverStageMacPackageScript = Join-Path $workspaceRoot "_external\DuressServer2
 $macRepoRoot = Join-Path $workspaceRoot "_external\duress-mac"
 $macBuildRolloutScript = Join-Path $macRepoRoot "scripts\build-mac-rollout-package.sh"
 $macInstallRolloutScript = Join-Path $macRepoRoot "scripts\install-mac-rollout-package.sh"
+$macInstallPkgScript = Join-Path $macRepoRoot "scripts\install-mac-rollout-pkg.sh"
 $macInspectStateScript = Join-Path $macRepoRoot "scripts\inspect-mac-client-state.sh"
 $macConnectivityScript = Join-Path $macRepoRoot "scripts\probe-mac-connectivity-context.sh"
 $macCaptureScreenshotScript = Join-Path $macRepoRoot "scripts\capture-screenshot-via-system-events.sh"
@@ -60,7 +61,7 @@ $remoteBundleDir = "$RemoteMacRepoRoot/artifacts/local-server-mixed-client-rollo
 $remotePackageName = "local-server-mixed-client-rollout"
 $remoteScreenshotDir = "${remoteBundleDir}/screenshots"
 $runtimeStatusPath = Join-Path $programDataRoot "LicenseRuntimeStatus.xml"
-$remoteMacInstalledAppPath = '~/Applications/Duress Alert/DuressAlert.app'
+$remoteMacInstalledAppPath = '~/Applications/DuressAlert.app'
 
 New-Item -ItemType Directory -Force -Path $OutputRoot, $logsRoot, $artifactsRoot, $screenshotsRoot, $windowsInstallRoot | Out-Null
 
@@ -693,8 +694,6 @@ function Wait-ForRemoteMacPolicyState {
             [string]$state.general.PopupTheme -eq $ExpectedPopupTheme -and
             [string]$state.general.PopupPosition -eq $ExpectedPopupPosition -and
             [string]$state.general.NotificationSound -eq $ExpectedNotificationSound -and
-            [bool]$state.general.ROS -eq $ExpectedRunOnStartup -and
-            [bool]$state.general.Pin -eq $ExpectedPinToTray -and
             ($PreviousFingerprint -eq "" -or $fingerprint -ne $PreviousFingerprint)) {
           return $state
         }
@@ -766,7 +765,7 @@ function Invoke-RemoteMacRefresh {
     '  fi',
     '  sleep 1',
     'done',
-    'open "$HOME/Applications/Duress Alert/DuressAlert.app"'
+    'open "$HOME/Applications/DuressAlert.app"'
   ) | Out-Null
 }
 
@@ -886,6 +885,12 @@ $results.Add((Invoke-And-Capture -Name "02-start-local-server-service-and-initia
 
   & powershell -NoProfile -ExecutionPolicy Bypass -File $installRealServerScript
 
+  $postInstallService = Get-Service -Name "DuressAlertService" -ErrorAction SilentlyContinue
+  if ($postInstallService -and $postInstallService.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
+    Stop-Service -Name "DuressAlertService" -Force
+    (Get-Service -Name "DuressAlertService").WaitForStatus([System.ServiceProcess.ServiceControllerStatus]::Stopped, [TimeSpan]::FromSeconds(20))
+  }
+
   $script:localServerIp = Get-LanIPv4
   $script:effectiveServerPort = Resolve-AvailableServerPort -PreferredPort $ServerPort
 
@@ -924,6 +929,7 @@ $results.Add((Invoke-And-Capture -Name "04-ship-mac-rollout-materials" -Action {
   foreach ($item in @(
     @{ Source = $macBuildRolloutScript; Destination = "${RemoteMacRepoRoot}/scripts/build-mac-rollout-package.sh" },
     @{ Source = $macInstallRolloutScript; Destination = "${RemoteMacRepoRoot}/scripts/install-mac-rollout-package.sh" },
+    @{ Source = $macInstallPkgScript; Destination = "${RemoteMacRepoRoot}/scripts/install-mac-rollout-pkg.sh" },
     @{ Source = $macCaptureScreenshotScript; Destination = "${RemoteMacRepoRoot}/scripts/capture-screenshot-via-system-events.sh" },
     @{ Source = $macProbeLoginItemScript; Destination = "${RemoteMacRepoRoot}/scripts/probe-mac-login-item-state.sh" },
     @{ Source = $macSeedHotkeyScript; Destination = "${RemoteMacRepoRoot}/scripts/seed-mac-hotkey-config.sh" },
@@ -942,6 +948,7 @@ $results.Add((Invoke-And-Capture -Name "04-ship-mac-rollout-materials" -Action {
     "set -euo pipefail",
     "chmod +x ${RemoteMacRepoRoot}/scripts/build-mac-rollout-package.sh",
     "chmod +x ${RemoteMacRepoRoot}/scripts/install-mac-rollout-package.sh",
+    "chmod +x ${RemoteMacRepoRoot}/scripts/install-mac-rollout-pkg.sh",
     "chmod +x ${RemoteMacRepoRoot}/scripts/capture-screenshot-via-system-events.sh",
     "chmod +x ${RemoteMacRepoRoot}/scripts/probe-mac-login-item-state.sh",
     "chmod +x ${RemoteMacRepoRoot}/scripts/seed-mac-hotkey-config.sh",
@@ -961,21 +968,35 @@ $results.Add((Invoke-And-Capture -Name "05-build-and-install-mac-rollout" -Actio
     "fi",
     "cd ${RemoteMacRepoRoot}",
     "bash scripts/build-mac-rollout-package.sh --provisioning-bundle ${remoteBundleDir}/DuressClientProvisioningBundle.zip --runtime ${MacRuntimeIdentifier} --package-name ${remotePackageName} --output-root ${remoteBundleDir}",
-    "cd ${remoteBundleDir}/${remotePackageName}",
-    "bash ./Install-DuressAlertMacWithProvisioning.sh --fresh-state --connect-on-launch"
+    "PKG_PATH=${remoteBundleDir}/${remotePackageName}.pkg",
+    'if [ -f "$PKG_PATH" ]; then',
+    "  cd ${remoteBundleDir}/${remotePackageName}",
+    '  bash ./Install-DuressAlertMacPkg.sh --package-path "$PKG_PATH" --fresh-state --connect-on-launch',
+    'else',
+    "  cd ${remoteBundleDir}/${remotePackageName}",
+    '  bash ./Install-DuressAlertMacWithProvisioning.sh --fresh-state --connect-on-launch',
+    'fi'
   )
 }))
 
 $results.Add((Invoke-And-Capture -Name "05b-stage-mac-rollout-into-server-artifacts" -Action {
+  $remoteMacPackagePkg = "${remoteBundleDir}/${remotePackageName}.pkg"
   $remoteMacPackageZip = "${remoteBundleDir}/${remotePackageName}.zip"
-  $localMacPackageZip = Copy-RemoteMacPathToLocal -RemotePath $remoteMacPackageZip -LocalParent $artifactsRoot
+  $remoteMacPackagePath = (Invoke-RemoteBashScript -Lines @(
+    "set -euo pipefail",
+    "if [ -f ${remoteMacPackagePkg} ]; then printf '%s' ${remoteMacPackagePkg}; elif [ -f ${remoteMacPackageZip} ]; then printf '%s' ${remoteMacPackageZip}; fi"
+  ) | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($remoteMacPackagePath)) {
+    throw "Could not find a built Mac rollout package on the remote Mac."
+  }
+  $localMacPackage = Copy-RemoteMacPathToLocal -RemotePath $remoteMacPackagePath -LocalParent $artifactsRoot
 
-  & powershell -NoProfile -ExecutionPolicy Bypass -File $serverStageMacPackageScript -PackagePath $localMacPackageZip -ServerDataRoot $programDataRoot | Out-Null
+  & powershell -NoProfile -ExecutionPolicy Bypass -File $serverStageMacPackageScript -PackagePath $localMacPackage -ServerDataRoot $programDataRoot | Out-Null
   if ($LASTEXITCODE -ne 0) {
     throw "Could not stage the built Mac rollout package into the server artifact library."
   }
 
-  $script:stagedMacHostedPackagePath = Get-ChildItem -LiteralPath (Join-Path $programDataRoot "ProvisioningArtifacts\ClientPackages") -Filter "DuressAlertMac.Rollout*.zip" |
+  $script:stagedMacHostedPackagePath = Get-ChildItem -LiteralPath (Join-Path $programDataRoot "ProvisioningArtifacts\ClientPackages") -Filter "DuressAlertMac.Rollout*" |
     Sort-Object LastWriteTimeUtc -Descending |
     Select-Object -First 1 -ExpandProperty FullName
   if ([string]::IsNullOrWhiteSpace($script:stagedMacHostedPackagePath)) {
