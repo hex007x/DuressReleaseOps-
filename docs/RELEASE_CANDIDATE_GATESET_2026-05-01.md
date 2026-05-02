@@ -21,6 +21,7 @@ This is the stricter proof bar to use before calling a build a release candidate
 
 - `exercise-linked-cloud-regression-suite.ps1`
 - `exercise-local-server-mixed-client-rollout-regression.ps1`
+- `exercise-cloud-hostname-tls-rehearsal.ps1`
 - `verify-release.ps1`
 
 ## Required Live/Product Proof
@@ -39,8 +40,23 @@ This is the stricter proof bar to use before calling a build a release candidate
 ## Strongly Preferred Before RC
 
 - `exercise-server-deployment-ui-smoke-suite.ps1` completes cleanly
+- `verify-published-cloud-installers.ps1 -Version <version>` passes for the exact published release
 - real-service protocol / incident / licensing suites are green in a clean environment
 - no known local port-collision or stale-shell harness issue is being waived
+
+## Recommended Combined Entry Point
+
+Use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File D:\Duress\DuressReleaseOps\test-env\exercise-release-candidate-gates.ps1 -Version <version>
+```
+
+That wrapper now combines:
+
+- the full regression pack with real-service requirement
+- the Cloud hostname/TLS rehearsal
+- the published cloud installer sanity check when the release version is supplied
 
 ## Alpha vs RC Rule
 
