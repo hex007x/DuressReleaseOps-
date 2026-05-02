@@ -31,6 +31,7 @@ Use these status values:
 
 | Date | Change Area | Unit / Functional | Integration | Regression Gate | Proof / Notes |
 |---|---|---|---|---|---|
+| 2026-05-02 | Country-aware legal document targeting and market-specific support/legal guidance | Done | Partial | Done | `PortalLegalTermsServiceTests.cs`; `MarkupRegressionTests.cs`; portal trial/purchase terms now surface legal scope summaries, management legal docs now target country/market/language scope, acceptance-copy emails include the selected legal scope, migration `20260502075014_AddCountryAwareLegalDocumentTargeting` backfills existing rows to `ALL/default/en`, and cloud unit + integration suites plus scripted cloud verify were rerun |
 | 2026-04-18 | Stripe-first payment link generation | Done | Partial | Done | `PaymentLinkGeneratorTests.cs`; cloud integration suite passed; cloud regression passed |
 | 2026-04-18 | Stripe webhook tracking and primary paid activation | Done | Partial | Done | `StripeWebhookProcessorTests.cs`; cloud integration suite passed; cloud regression passed |
 | 2026-04-18 | Stripe-paid accounting sync into Xero after activation | Done | Partial | Done | `PaymentAccountingSyncServiceTests.cs`; `PaymentActivationServiceTests.cs`; `XeroConnectionSettingsProviderTests.cs`; cloud regression passed |
