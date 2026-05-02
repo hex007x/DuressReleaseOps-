@@ -102,6 +102,7 @@ Use these status values:
 | 2026-04-17 | Claim token repair and legacy-then-claim recovery | Done | Partial | Done | server tests added for legacy-first claim and failed local activation; full regression and licensing proof passed |
 | 2026-04-17 | Known issue regressions for recent admin and installer fixes | Done | Partial | Done | known-issue suite added in `DuressReleaseOps`; full proof pack passed |
 | 2026-04-17 | Authenticated cloud release smoke | Partial | Done | Done | seeded login/MFA smoke added in `DuressReleaseOps`; downloads/installers proof included |
+| 2026-05-03 | Server-side Mac rollout staging first-class deployment coverage | Done | Partial | Partial | `DuressServer2025.Tests/Program.cs` now proves the Deployment workflow treats Mac as a rollout artifact peer and normalizes staged `DuressAlertMac.Rollout` ZIPs into server artifacts; existing mixed-client rollout proof continues to cover the real staged Mac package path |
 
 ## Gaps To Keep Closing
 

@@ -112,6 +112,23 @@ try {
     }
   }
 
+  `$deploymentButtons = New-Object System.Collections.Generic.List[System.Windows.Forms.Button]
+  `$collectButtons = {
+    param([System.Windows.Forms.Control]`$control)
+    foreach (`$child in `$control.Controls) {
+      if (`$child -is [System.Windows.Forms.Button]) {
+        `$deploymentButtons.Add([System.Windows.Forms.Button]`$child)
+      }
+      if (`$child.HasChildren) {
+        & `$collectButtons `$child
+      }
+    }
+  }
+  & `$collectButtons `$tabDeployment
+  if (-not (`$deploymentButtons | Where-Object { `$_.Text -eq 'Stage Mac ZIP' })) {
+    throw 'Stage Mac ZIP was not present on the Deployment tab.'
+  }
+
   `$summaryBox = Get-FieldValue -Name 'txtDeploymentSummary'
   if ([string]::IsNullOrWhiteSpace(`$summaryBox.Text) -or `$summaryBox.Text -notmatch 'Claim|Build|policy') {
     throw 'The deployment summary did not contain the expected workflow guidance.'
@@ -130,7 +147,7 @@ try {
   if (`$null -eq `$wizardMethod) {
     throw 'Could not locate BuildDeploymentWizardHeadings.'
   }
-  `$wizardHeadings = @(`$wizardMethod.Invoke(`$null, @(`$false, `$false, `$false, `$false, `$false, `$false, `$false, `$false)))
+  `$wizardHeadings = @(`$wizardMethod.Invoke(`$null, @(`$false, `$false, `$false, `$false, `$false, `$false, `$false, `$false, `$false)))
   if (`$wizardHeadings.Count -lt 5) {
     throw 'The deployment wizard headings list was shorter than expected.'
   }
@@ -235,7 +252,7 @@ try {
   $lines += ""
   $lines += "- The server WinForms shell rendered the expected top-level tabs for Manage, Policy, Deployment, Licensing, and Support."
   $lines += "- Policy and Deployment retained tall scrollable layouts so critical rollout controls are less likely to disappear below the fold."
-  $lines += "- Save Policy, Fetch Client MSI, Build Workstation MSI, Build Terminal MSI, Claim Now, and Build Update Kit were all present on their expected surfaces."
+  $lines += "- Save Policy, Fetch Client MSI, Build Workstation MSI, Build Terminal MSI, Stage Mac ZIP, Claim Now, and Build Update Kit were all present on their expected surfaces."
   $lines += "- Deployment wizard headings were still available for the guided rollout path."
   $lines += ""
   $lines += "## Artifacts"
