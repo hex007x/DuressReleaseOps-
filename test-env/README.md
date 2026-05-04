@@ -427,6 +427,13 @@ Note: `exercise-license-refresh.ps1` restarts the real Windows service, so it mu
 `exercise-cloud-issued-license-refresh.ps1` also backs up and restores the installed real-server license automatically.
 `exercise-server-cloud-claim.ps1` uses an isolated `DURESS_SERVER_DATA_ROOT` sandbox so it does not touch the live `%ProgramData%` server config.
 
+Current Cloud host intent for shared proof:
+
+- claim/check-in and linked-cloud licensing proof should target the runtime host on `5190`
+- machine-facing installer delivery proof should target the artifact host on `5194`
+- customer self-service browsing starts from the portal host on `5196`
+- staff/admin verification starts from the control-plane host on `5186`
+
 Reset everything to a clean baseline:
 
 ```powershell
