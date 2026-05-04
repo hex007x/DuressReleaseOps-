@@ -110,6 +110,7 @@ Use these status values:
 | 2026-04-17 | Known issue regressions for recent admin and installer fixes | Done | Partial | Done | known-issue suite added in `DuressReleaseOps`; full proof pack passed |
 | 2026-04-17 | Authenticated cloud release smoke | Partial | Done | Done | seeded login/MFA smoke added in `DuressReleaseOps`; downloads/installers proof included |
 | 2026-05-03 | Server-side Mac rollout staging first-class deployment coverage | Done | Partial | Partial | `DuressServer2025.Tests/Program.cs` now proves the Deployment workflow treats Mac as a rollout artifact peer and normalizes staged `DuressAlertMac.Rollout` ZIPs into server artifacts; existing mixed-client rollout proof continues to cover the real staged Mac package path |
+| 2026-05-04 | Cloud runtime-compatibility proxy coverage for server-facing claim, check-in, installer download, and public integration ingress | Done | Partial | Done | `RuntimeProxyClientTests.cs`; `RuntimeDownloadProxyResponseBuilderTests.cs`; linked-cloud regression now defaults to the runtime host and still passes through claim/check-in/replacement/lifecycle; the web-host compatibility layer is now explicitly covered for status/body propagation, header forwarding, missing-runtime handling, and buffered file download behavior so embedded MSI fetches cannot regress back to disposed-stream failures unnoticed |
 
 ## Gaps To Keep Closing
 
