@@ -1,7 +1,7 @@
 param(
     [string]$SystemName = 'Main Reception Server',
     [string]$ReplacementClaimToken = 'DEV-REPLACEMENT-CLAIM',
-    [string]$CloudClaimUrl = 'http://localhost:5186/api/systems/claim',
+    [string]$CloudClaimUrl = 'http://localhost:5190/api/systems/claim',
     [string]$ServerExePath = '',
     [string]$ReplacementFingerprint = 'REPLACEMENT-FINGERPRINT-DEV-001',
     [string]$ReplacementMachineName = 'replacement-server-dev',

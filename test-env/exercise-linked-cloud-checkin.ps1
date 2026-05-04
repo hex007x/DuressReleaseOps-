@@ -1,5 +1,5 @@
 param(
-    [string]$CloudCheckinUrl = 'http://localhost:5186/api/licensing/checkin',
+    [string]$CloudCheckinUrl = 'http://localhost:5190/api/licensing/checkin',
     [string]$LicenseSerial = 'DEV-LIC-0001',
     [string]$CustomerId = 'b6a76a46-8c9c-4bed-b3ea-f72dad9ea48a',
     [string]$CustomerName = 'Contoso Medical',

@@ -412,8 +412,8 @@ powershell -ExecutionPolicy Bypass -File .\test-env\exercise-license-refresh.ps1
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-license-refresh.ps1 -UseRenewedLicense
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-cloud-license-scenarios.ps1
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-cloud-issued-license-refresh.ps1
-powershell -ExecutionPolicy Bypass -File .\test-env\exercise-server-cloud-claim.ps1 -CloudClaimUrl http://localhost:5186/api/systems/claim -ClaimToken <token>
-powershell -ExecutionPolicy Bypass -File .\test-env\exercise-server-cloud-checkin.ps1 -CloudCheckinUrl http://localhost:5186/api/licensing/checkin -SignedLicensePath <license.xml>
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-server-cloud-claim.ps1 -CloudClaimUrl http://localhost:5190/api/systems/claim -ClaimToken <token>
+powershell -ExecutionPolicy Bypass -File .\test-env\exercise-server-cloud-checkin.ps1 -CloudCheckinUrl http://localhost:5190/api/licensing/checkin -SignedLicensePath <license.xml>
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-linked-cloud-claim.ps1 -ClaimToken <token>
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-linked-cloud-checkin.ps1
 powershell -ExecutionPolicy Bypass -File .\test-env\exercise-linked-cloud-replacement.ps1 -ReplacementClaimToken <token>

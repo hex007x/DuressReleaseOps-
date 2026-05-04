@@ -3,8 +3,8 @@ param(
   [string]$SystemName = 'Main Reception Server',
   [string]$ClaimToken = 'DEV-CLAIM-DEFAULT',
   [string]$ReplacementClaimToken = 'DEV-REPLACEMENT-CLAIM',
-  [string]$CloudClaimUrl = 'http://localhost:5186/api/systems/claim',
-  [string]$CloudCheckinUrl = 'http://localhost:5186/api/licensing/checkin'
+  [string]$CloudClaimUrl = 'http://localhost:5190/api/systems/claim',
+  [string]$CloudCheckinUrl = 'http://localhost:5190/api/licensing/checkin'
 )
 
 Set-StrictMode -Version Latest

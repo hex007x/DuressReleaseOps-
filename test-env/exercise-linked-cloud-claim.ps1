@@ -1,7 +1,7 @@
 param(
     [string]$SystemName = 'Main Reception Server',
     [string]$ClaimToken = 'DEV-CLAIM-DEFAULT',
-    [string]$CloudClaimUrl = 'http://localhost:5186/api/systems/claim',
+    [string]$CloudClaimUrl = 'http://localhost:5190/api/systems/claim',
     [string]$ServerExePath = '',
     [switch]$ExpectTrialLicense,
     [string]$DatabaseName = 'duress_cloud_dev',
