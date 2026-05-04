@@ -83,7 +83,7 @@ $results.Add((Invoke-And-Capture -Name "03-client-policy-provisioning-suite" -Ac
   powershell -NoProfile -ExecutionPolicy Bypass -File $provisioningSuiteScript
 }))
 
-$results.Add((Invoke-And-Capture -Name "04-seed-monitor-evidence-state" -Action {
+$results.Add((Invoke-And-Capture -Name "04-seed-monitor-name-before-state" -Action {
   Invoke-ServerReflection {
     $configType = $asm.GetType('DuressAlert.ConfigManager')
     $serverSettingsType = $asm.GetType('DuressAlert.ServerSettings')
@@ -104,6 +104,54 @@ $results.Add((Invoke-And-Capture -Name "04-seed-monitor-evidence-state" -Action 
     $serverSettingsType.GetProperty('PolicyLockPopupTheme').SetValue($settings, $true)
     $serverSettingsType.GetProperty('PolicyLockPopupPosition').SetValue($settings, $true)
     $saveSettings.Invoke($null, @($settings))
+
+    $runtimeStatus = [Activator]::CreateInstance($statusType)
+    $statusType.GetProperty('LicenseId').SetValue($runtimeStatus, 'evidence-license')
+    $statusType.GetProperty('CurrentConnectedClients').SetValue($runtimeStatus, 1)
+    $statusType.GetProperty('ModernConnectedClients').SetValue($runtimeStatus, 1)
+    $statusType.GetProperty('LegacyConnectedClients').SetValue($runtimeStatus, 0)
+    $statusType.GetProperty('ConnectedClientVersions').SetValue($runtimeStatus, 'Duress2025 1.0')
+    $statusType.GetProperty('LastCloudCheckResult').SetValue($runtimeStatus, 'Success')
+    $statusType.GetProperty('LastCloudLicenseState').SetValue($runtimeStatus, 'Licensed')
+    $statusType.GetProperty('LastCloudCheckUtc').SetValue($runtimeStatus, [DateTime]::UtcNow)
+
+    $client = [Activator]::CreateInstance($clientType)
+    $clientType.GetProperty('Name').SetValue($client, 'ROOM-SCRIPT')
+    $clientType.GetProperty('Status').SetValue($client, 'Ready')
+    $clientType.GetProperty('Connected').SetValue($client, $true)
+    $clientType.GetProperty('IsLegacyClient').SetValue($client, $false)
+    $clientType.GetProperty('Version').SetValue($client, '2025.04')
+    $clientType.GetProperty('Platform').SetValue($client, 'Windows')
+    $clientType.GetProperty('InstallationId').SetValue($client, 'install-script')
+    $clientType.GetProperty('MachineName').SetValue($client, 'ROOM-SCRIPT')
+    $clientType.GetProperty('PolicyCapable').SetValue($client, $true)
+    $clientType.GetProperty('LastPolicyVersion').SetValue($client, '1')
+    $clientType.GetProperty('LastPolicySource').SetValue($client, 'server')
+    $clientType.GetProperty('LastPolicyFingerprint').SetValue($client, 'evidence-fingerprint')
+    $clientType.GetProperty('LastSignatureValid').SetValue($client, $true)
+    $clientType.GetProperty('LastPolicyError').SetValue($client, '')
+    $clientType.GetProperty('LastPolicyAppliedUtc').SetValue($client, [DateTime]::UtcNow)
+    $clientType.GetProperty('RemoteEndpoint').SetValue($client, '127.0.0.1:8001')
+    $clientType.GetProperty('ConnectedAtUtc').SetValue($client, [DateTime]::UtcNow)
+    $clientType.GetProperty('LastConnectedUtc').SetValue($client, [DateTime]::UtcNow)
+    $clientType.GetProperty('LastUpdatedUtc').SetValue($client, [DateTime]::UtcNow)
+
+    $clients = $statusType.GetProperty('Clients').GetValue($runtimeStatus)
+    $null = $clients.Add($client)
+    $saveRuntime.Invoke($null, @($runtimeStatus))
+  }
+}))
+
+$results.Add((Invoke-And-Capture -Name "05-capture-monitor-name-before-refresh" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $captureMonitorShotScript -OutputPath (Join-Path $shotsRoot "server-monitor-client-name-before-refresh.png") -ServerDataRoot $serverDataRoot -StartupPage Monitor
+}))
+
+$results.Add((Invoke-And-Capture -Name "06-seed-monitor-name-after-state" -Action {
+  Invoke-ServerReflection {
+    $configType = $asm.GetType('DuressAlert.ConfigManager')
+    $statusType = $asm.GetType('DuressAlert.LicenseRuntimeStatus')
+    $clientType = $asm.GetType('DuressAlert.ClientRuntimeInfo')
+    $saveRuntime = $configType.GetMethod('SaveLicenseRuntimeStatus', [System.Reflection.BindingFlags]'Static,Public')
 
     $runtimeStatus = [Activator]::CreateInstance($statusType)
     $statusType.GetProperty('LicenseId').SetValue($runtimeStatus, 'evidence-license')
@@ -142,11 +190,11 @@ $results.Add((Invoke-And-Capture -Name "04-seed-monitor-evidence-state" -Action 
   }
 }))
 
-$results.Add((Invoke-And-Capture -Name "05-capture-monitor-name-refresh" -Action {
-  powershell -NoProfile -ExecutionPolicy Bypass -File $captureMonitorShotScript -OutputPath (Join-Path $shotsRoot "server-monitor-client-name-refresh.png") -ServerDataRoot $serverDataRoot -StartupPage Monitor
+$results.Add((Invoke-And-Capture -Name "07-capture-monitor-name-after-refresh" -Action {
+  powershell -NoProfile -ExecutionPolicy Bypass -File $captureMonitorShotScript -OutputPath (Join-Path $shotsRoot "server-monitor-client-name-after-refresh.png") -ServerDataRoot $serverDataRoot -StartupPage Monitor
 }))
 
-$results.Add((Invoke-And-Capture -Name "06-capture-client-policy-page" -Action {
+$results.Add((Invoke-And-Capture -Name "08-capture-client-policy-page" -Action {
   powershell -NoProfile -ExecutionPolicy Bypass -File $captureMonitorShotScript -OutputPath (Join-Path $shotsRoot "server-client-policy-evidence.png") -ServerDataRoot $serverDataRoot -StartupPage ClientPolicy
 }))
 
@@ -170,8 +218,8 @@ $lines += '- Signed server policy apply/reporting: proven by `02-client-policy-s
 $lines += '- Queued resend processing: proven by `02-client-policy-suite`.'
 $lines += '- Emergency/offline unlock: proven by `02-client-policy-suite`.'
 $lines += '- Pre-install provisioning bundle and trusted-policy seeding: proven by `03-client-policy-provisioning-suite`.'
-$lines += '- Server monitor evidence for updated client identity name: proven by `05-capture-monitor-name-refresh`.'
-$lines += '- Server client-policy UI evidence: proven by `06-capture-client-policy-page`.'
+$lines += '- Server monitor before/after evidence for client identity name refresh: proven by `05-capture-monitor-name-before-refresh` and `07-capture-monitor-name-after-refresh`.'
+$lines += '- Server client-policy UI evidence: proven by `08-capture-client-policy-page`.'
 $lines += ""
 $lines += "## Screenshots"
 $lines += ""
@@ -182,7 +230,7 @@ foreach ($shot in (Get-ChildItem -Path $shotsRoot -File -ErrorAction SilentlyCon
 $lines += ""
 $lines += "## Notes"
 $lines += ""
-$lines += "- The monitor screenshot is seeded with a policy-capable client whose visible name is already updated to `SCRIPT UPDATED` so support can visually verify name-refresh behavior in the server monitor."
+$lines += "- The monitor screenshots now include a seeded before/after identity change (`ROOM-SCRIPT` to `SCRIPT UPDATED`) so support can visually verify how the Operations monitor should reflect a visible client-name update."
 $lines += "- The policy-page screenshot proves the server-side policy configuration surface is present in the current build."
 $lines += "- This pack is evidence-focused and complements, rather than replaces, the executable policy and provisioning suites."
 
