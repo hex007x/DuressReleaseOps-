@@ -64,6 +64,20 @@ For a practical release-grade pass, aim for:
 - full regression pack green when the environment is clean
 - release verification green
 
+## Future Multi-Jurisdiction Rule
+
+When a future deployment introduces a jurisdiction-specific runtime, artifact, or worker host, do not treat that as a portal-only or billing-only release.
+
+The rehearsal shape then becomes:
+
+1. global control-plane proof still runs
+2. affected regional runtime proof must run against the intended `runtime-<region>` host
+3. affected regional artifact proof must run against the intended `downloads-<region>` host
+4. affected regional worker proof must run where that worker owns in-region reporting or escalation processing
+5. evidence should confirm that residency-bound runtime and operational data stayed in-region even if billing data remained global
+
+Until there is a real jurisdictional deployment, keep the current local split as a single-region rehearsal model and avoid inventing fake extra regions on the workstation.
+
 ## Still Manual Or Limited Areas
 
 These areas still need intentional human review or constrained hardware:
@@ -71,4 +85,3 @@ These areas still need intentional human review or constrained hardware:
 - broader Mac hardware/version coverage
 - screenshot refreshes for new admin IA
 - live desktop-session proof where the workflow depends on actual foreground UI behavior
-

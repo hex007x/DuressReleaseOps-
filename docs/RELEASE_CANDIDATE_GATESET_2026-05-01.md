@@ -44,6 +44,18 @@ This is the stricter proof bar to use before calling a build a release candidate
 - real-service protocol / incident / licensing suites are green in a clean environment
 - no known local port-collision or stale-shell harness issue is being waived
 
+## Additional Rule For Future Regional Runtime Rollout
+
+If the release scope includes a jurisdiction-specific runtime deployment, add these proof requirements before calling it an RC:
+
+- verify the affected `runtime-<region>` host directly rather than only through compatibility shims
+- verify the affected `downloads-<region>` host directly when installer delivery is in scope
+- verify the affected `worker-<region>` host directly when regional reporting or escalation delivery is in scope
+- rerun linked Cloud/server proof against the intended regional runtime host
+- explicitly confirm that residency-bound runtime and operational evidence stayed in-region while global billing and commercial proof still passed
+
+Until a real regional deployment exists, keep the current RC gate set on the single local split and avoid adding fake multi-region ceremony to normal local release rehearsals.
+
 ## Recommended Combined Entry Point
 
 Use:
